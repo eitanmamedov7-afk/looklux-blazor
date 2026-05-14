@@ -1,0 +1,745 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@using Models
+@using gadifff.Services
+@using Microsoft.AspNetCore.Hosting
+@using Microsoft.Extensions.Hosting
+@using Microsoft.Extensions.Logging
+@inject MatchingService Matching
+@inject IWebHostEnvironment Env
+@inject ILogger<SlotMachineMatch> Logger
+
+<div class="slot-overlay matcher-overlay">
+    <div class="slot-panel matcher-panel">
+        <div class="slot-header d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Outfit Matcher</strong>
+                <div class="text-muted small">@(RequireSeedSelection ? "Pick up to two seeds, then find the best matching look." : "Using your filtered wardrobe to find the best recommendations.")</div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="Close">Close</button>
+        </div>
+
+        <div class="slot-controls">
+            @RenderSlot("shirt", "Shirt", CurrentShirt, PrevShirt, NextShirt)
+            @RenderSlot("pants", "Pants", CurrentPants, PrevPants, NextPants)
+            @RenderSlot("shoes", "Shoes", CurrentShoes, PrevShoes, NextShoes)
+        </div>
+
+        <div class="matcher-actions">
+            <button class="btn btn-primary" @onclick="RunMatch" disabled="@Running">Find match</button>
+            <div class="status-line">
+                @if (Running)
+                {
+                    <span>@_progressStep</span>
+                }
+                else if (!string.IsNullOrEmpty(Status))
+                {
+                    <span>@Status</span>
+                }
+                else
+                {
+                    <span>Ready when you are</span>
+                }
+            </div>
+        </div>
+
+        @if (Suggestions.Count > 0)
+        {
+            <div class="mt-3 match-results">
+                <h6 class="match-results-title">Top 3 suggestions</h6>
+                @for (var i = 0; i < Suggestions.Count; i++)
+                {
+                    var suggestion = Suggestions[i];
+                    var index = i + 1;
+                    var expanded = index == 1 || _expandedSuggestions.Contains(index);
+                    var signature = SuggestionSignature(suggestion);
+                    var feedback = _saveFeedback.GetValueOrDefault(signature);
+
+                    <div class="card mb-2 match-result-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap match-result-header">
+                                <div>
+                                    <div class="fw-bold">Suggestion #@index (Score @suggestion.Score)</div>
+                                    @if (!string.IsNullOrWhiteSpace(suggestion.StyleLabel))
+                                    {
+                                        <div class="text-muted small">Style: @suggestion.StyleLabel</div>
+                                    }
+                                </div>
+                                <div class="d-flex gap-2 match-result-actions">
+                                    @if (index > 1)
+                                    {
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ToggleSuggestion(index)">
+                                            @(expanded ? "Collapse" : "Read more")
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-primary"
+                                            disabled="@IsSuggestionSaveDisabled(suggestion)"
+                                            @onclick="() => SaveSuggestionAsync(suggestion)">
+                                        @GetSuggestionSaveButtonText(suggestion)
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (expanded)
+                            {
+                                @if (!string.IsNullOrWhiteSpace(suggestion.Explanation))
+                                {
+                                    <div class="text-muted small mt-2">@suggestion.Explanation</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(suggestion.RecommendedPlaces))
+                                {
+                                    <div class="text-muted small mt-1">Where to wear: @suggestion.RecommendedPlaces</div>
+                                }
+
+                                <div class="d-flex flex-column gap-2 mt-2">
+                                    @foreach (var piece in new[]
+                                    {
+                                        new { Label = "Shirt", GarmentId = suggestion.ShirtId },
+                                        new { Label = "Pants", GarmentId = suggestion.PantsId },
+                                        new { Label = "Shoes", GarmentId = suggestion.ShoesId }
+                                    })
+                                    {
+                                        var g = FindGarment(piece.GarmentId);
+                                        <div class="card match-piece-card">
+                                            <div class="card-body d-flex align-items-center gap-3 match-piece-body">
+                                                <img src="@GetImageUrl(piece.GarmentId)"
+                                                     class="match-piece-image"
+                                                     onerror="this.style.display='none';" />
+                                                <div>
+                                                    <div class="fw-bold">@piece.Label</div>
+                                                    <div class="text-muted small">@g?.Type</div>
+                                                    <div class="text-muted small">@g?.Color</div>
+                                                    <div class="text-muted small">@g?.Brand</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(feedback.Message))
+                            {
+                                <div class="small mt-2 @(feedback.IsError ? "text-danger" : "text-success")">@feedback.Message</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (_blocked != null)
+        {
+            <div class="alert alert-warning mt-3">
+                Need at least @_blocked.MinPerTypeRequired of each type. Current:
+                shirts: @_blocked.Counts.GetValueOrDefault("shirt", 0),
+                pants: @_blocked.Counts.GetValueOrDefault("pants", 0),
+                shoes: @_blocked.Counts.GetValueOrDefault("shoes", 0).
+            </div>
+        }
+        @if (_noMatch)
+        {
+            <div class="alert alert-info mt-2">@_noMatchMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger mt-2">@_error</div>
+        }
+    </div>
+
+    @if (Running)
+    {
+        <div class="match-loading-overlay">
+            <div class="match-loading-card">
+                <div class="fw-bold mb-2">Finding your best match</div>
+                <div class="text-muted small mb-2">@_progressStep</div>
+                <div class="match-progress-track">
+                    <div class="match-progress-fill" style="width:@_progressPercent%"></div>
+                </div>
+                <div class="small mt-2">@_progressPercent%</div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+    [Parameter] public List<Garment> Garments { get; set; } = new();
+    [Parameter] public string? UserRequest { get; set; }
+    [Parameter] public IEnumerable<string>? SeedGarmentIds { get; set; }
+    [Parameter] public bool AutoStart { get; set; }
+    [Parameter] public bool RequireSeedSelection { get; set; } = true;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnMatchComplete { get; set; }
+
+    private readonly string[] _progressSteps =
+    {
+        "Validating selection",
+        "Loading wardrobe",
+        "Scoring candidates",
+        "Generating recommendations",
+        "Preparing 3 suggestions",
+        "Done"
+    };
+
+    private List<Garment> _shirts = new();
+    private List<Garment> _pants = new();
+    private List<Garment> _shoes = new();
+
+    private int _idxShirt;
+    private int _idxPants;
+    private int _idxShoes;
+    private readonly HashSet<string> _untypedSeedIds = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool LockShirt;
+    private bool LockPants;
+    private bool LockShoes;
+
+    private bool Running;
+    private string Status = string.Empty;
+    private bool _noMatch;
+    private string _noMatchMessage = "No match. Add more clothes.";
+    private string? _error;
+    private MatchResult? _blocked;
+    private string _lastSyncSignature = string.Empty;
+
+    private int _progressPercent;
+    private string _progressStep = "Ready";
+
+    private readonly HashSet<string> _savedSuggestionSignatures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _savingSuggestionSignatures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (string Message, bool IsError)> _saveFeedback = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<int> _expandedSuggestions = new();
+    private List<string> _lastRunSeedIds = new();
+    private List<ScoredCombination> Suggestions = new();
+    private ScoredCombination? PrimaryResult => Suggestions.FirstOrDefault();
+
+    private Garment? CurrentShirt => _shirts.Count == 0 ? null : _shirts[_idxShirt % _shirts.Count];
+    private Garment? CurrentPants => _pants.Count == 0 ? null : _pants[_idxPants % _pants.Count];
+    private Garment? CurrentShoes => _shoes.Count == 0 ? null : _shoes[_idxShoes % _shoes.Count];
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnParametersSetAsync()
+    {
+        var signature = BuildSyncSignature();
+        if (string.Equals(signature, _lastSyncSignature, StringComparison.Ordinal))
+            return;
+
+        _lastSyncSignature = signature;
+
+        _idxShirt = 0;
+        _idxPants = 0;
+        _idxShoes = 0;
+        _shirts = Garments.Where(g => IsType(g, "shirt")).ToList();
+        _pants = Garments.Where(g => IsType(g, "pants")).ToList();
+        _shoes = Garments.Where(g => IsType(g, "shoes")).ToList();
+        _untypedSeedIds.Clear();
+
+        var preferredSeedType = string.Empty;
+        if (SeedGarmentIds != null)
+        {
+            foreach (var id in SeedGarmentIds.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()))
+            {
+                var g = Garments.FirstOrDefault(x => string.Equals(x.GarmentId, id, StringComparison.OrdinalIgnoreCase));
+                if (g == null) continue;
+
+                if (IsType(g, "shirt"))
+                {
+                    _idxShirt = Math.Max(0, _shirts.FindIndex(x => string.Equals(x.GarmentId, id, StringComparison.OrdinalIgnoreCase)));
+                    if (string.IsNullOrEmpty(preferredSeedType)) preferredSeedType = "shirt";
+                }
+                else if (IsType(g, "pants"))
+                {
+                    _idxPants = Math.Max(0, _pants.FindIndex(x => string.Equals(x.GarmentId, id, StringComparison.OrdinalIgnoreCase)));
+                    if (string.IsNullOrEmpty(preferredSeedType)) preferredSeedType = "pants";
+                }
+                else if (IsType(g, "shoes"))
+                {
+                    _idxShoes = Math.Max(0, _shoes.FindIndex(x => string.Equals(x.GarmentId, id, StringComparison.OrdinalIgnoreCase)));
+                    if (string.IsNullOrEmpty(preferredSeedType)) preferredSeedType = "shoes";
+                }
+                else
+                {
+                    _untypedSeedIds.Add(g.GarmentId);
+                }
+            }
+        }
+
+        SetExclusiveSeed(preferredSeedType);
+        Suggestions.Clear();
+        _expandedSuggestions.Clear();
+        _saveFeedback.Clear();
+        _savingSuggestionSignatures.Clear();
+        _lastRunSeedIds = new List<string>();
+        _noMatch = false;
+        _noMatchMessage = "No match. Add more clothes.";
+        _error = null;
+        _blocked = null;
+        Status = string.Empty;
+
+        if (AutoStart)
+            await RunMatch();
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private string BuildSyncSignature()
+    {
+        var garmentKey = string.Join("|", Garments
+            .Select(g => $"{g.GarmentId}:{NormalizeTypeName(g.Type)}")
+            .OrderBy(v => v, StringComparer.OrdinalIgnoreCase));
+
+        var seedKey = string.Join("|", (SeedGarmentIds ?? Enumerable.Empty<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .OrderBy(v => v, StringComparer.OrdinalIgnoreCase));
+
+        return $"{UserId}::{AutoStart}::{garmentKey}::{seedKey}";
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private RenderFragment RenderSlot(string type, string title, Garment? current, Action prevAction, Action nextAction) => builder =>
+    {
+        var seq = 0;
+        var isSeed = IsSeedSelected(type);
+        var slotGarmentId = GetDisplayedSlotGarmentId(type);
+        var slotGarment = slotGarmentId == null ? null : FindGarment(slotGarmentId);
+
+        builder.OpenElement(seq++, "div");
+
+        builder.OpenElement(seq++, "label");
+        builder.AddAttribute(seq++, "class", "form-label");
+        builder.AddContent(seq++, title);
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", $"slot-block {(isSeed ? "slot-seed" : "slot-empty")}");
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "garment-thumb-frame slot-thumb-frame roulette-thumb-frame");
+        if (!string.IsNullOrWhiteSpace(slotGarmentId))
+        {
+            builder.OpenElement(seq++, "img");
+            builder.AddAttribute(seq++, "class", "garment-thumb roulette-thumb");
+            builder.AddAttribute(seq++, "src", GetImageUrl(slotGarmentId));
+            builder.AddAttribute(seq++, "alt", $"{title} preview");
+            builder.AddAttribute(seq++, "onerror", "this.style.display='none';this.nextElementSibling.classList.add('visible');");
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "garment-thumb-fallback");
+            builder.AddContent(seq++, "No image");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "garment-thumb-fallback visible");
+            builder.AddContent(seq++, "?");
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "d-flex justify-content-between align-items-center");
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-light");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, prevAction));
+        builder.AddContent(seq++, "<");
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "text-center flex-grow-1");
+        if (!string.IsNullOrWhiteSpace(slotGarmentId) && slotGarment != null)
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "slot-title");
+            builder.AddContent(seq++, slotGarment.Brand ?? title);
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "slot-meta");
+            builder.AddContent(seq++, slotGarment.Color);
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "slot-title");
+            builder.AddContent(seq++, "?");
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "slot-meta text-muted");
+            builder.AddContent(seq++, "to be matched");
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-light");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, nextAction));
+        builder.AddContent(seq++, ">");
+        builder.CloseElement();
+
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "form-check mt-2");
+
+        builder.OpenElement(seq++, "input");
+        builder.AddAttribute(seq++, "class", "form-check-input");
+        builder.AddAttribute(seq++, "type", "checkbox");
+        builder.AddAttribute(seq++, "checked", isSeed);
+        builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+        {
+            var isChecked = e?.Value is bool b && b;
+            SetSeed(type, isChecked);
+        }));
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "label");
+        builder.AddAttribute(seq++, "class", "form-check-label");
+        builder.AddContent(seq++, $"Use {title.ToLowerInvariant()} as seed");
+        builder.CloseElement();
+
+        builder.CloseElement();
+
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    private void SetSeed(string type, bool isChecked)
+    {
+        if (!isChecked)
+        {
+            if (string.Equals(type, "shirt", StringComparison.OrdinalIgnoreCase)) LockShirt = false;
+            if (string.Equals(type, "pants", StringComparison.OrdinalIgnoreCase)) LockPants = false;
+            if (string.Equals(type, "shoes", StringComparison.OrdinalIgnoreCase)) LockShoes = false;
+            return;
+        }
+
+        if (SelectedSeedCount() >= 2 && !IsSeedSelected(type))
+        {
+            _error = "You can choose up to two seeds.";
+            return;
+        }
+
+        if (string.Equals(type, "shirt", StringComparison.OrdinalIgnoreCase)) LockShirt = true;
+        if (string.Equals(type, "pants", StringComparison.OrdinalIgnoreCase)) LockPants = true;
+        if (string.Equals(type, "shoes", StringComparison.OrdinalIgnoreCase)) LockShoes = true;
+    }
+
+    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    private void SetExclusiveSeed(string? type)
+    {
+        LockShirt = string.Equals(type, "shirt", StringComparison.OrdinalIgnoreCase);
+        LockPants = string.Equals(type, "pants", StringComparison.OrdinalIgnoreCase);
+        LockShoes = string.Equals(type, "shoes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private bool IsSeedSelected(string type) =>
+        (type == "shirt" && LockShirt) ||
+        (type == "pants" && LockPants) ||
+        (type == "shoes" && LockShoes);
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private int SelectedSeedCount()
+    {
+        var count = 0;
+        if (LockShirt) count++;
+        if (LockPants) count++;
+        if (LockShoes) count++;
+        return count;
+    }
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private string? GetDisplayedSlotGarmentId(string type)
+    {
+        if (PrimaryResult != null)
+        {
+            if (type == "shirt") return PrimaryResult.ShirtId;
+            if (type == "pants") return PrimaryResult.PantsId;
+            if (type == "shoes") return PrimaryResult.ShoesId;
+        }
+
+        if (!IsSeedSelected(type))
+            return null;
+
+        return type switch
+        {
+            "shirt" => CurrentShirt?.GarmentId,
+            "pants" => CurrentPants?.GarmentId,
+            "shoes" => CurrentShoes?.GarmentId,
+            _ => null
+        };
+    }
+
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void Cycle(string type, int delta)
+    {
+        switch (type)
+        {
+            case "shirt":
+                if (_shirts.Count == 0) return;
+                _idxShirt = Mod(_idxShirt + delta, _shirts.Count);
+                break;
+            case "pants":
+                if (_pants.Count == 0) return;
+                _idxPants = Mod(_idxPants + delta, _pants.Count);
+                break;
+            case "shoes":
+                if (_shoes.Count == 0) return;
+                _idxShoes = Mod(_idxShoes + delta, _shoes.Count);
+                break;
+        }
+    }
+
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void PrevShirt() => Cycle("shirt", -1);
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void NextShirt() => Cycle("shirt", 1);
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void PrevPants() => Cycle("pants", -1);
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void NextPants() => Cycle("pants", 1);
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void PrevShoes() => Cycle("shoes", -1);
+    // הסבר: פונקציית ניווט/סיבוב. מעבירה בחירה לפריט הקודם/הבא לפי מצב נוכחי.
+    private void NextShoes() => Cycle("shoes", 1);
+
+    // הסבר: פונקציית הרצה מרכזית. מפעילה רצף של שלבים עסקיים עד לקבלת תוצאה מלאה.
+    private async Task RunMatch()
+    {
+        Running = true;
+        Status = string.Empty;
+        _progressPercent = 2;
+        _progressStep = _progressSteps[0];
+        Suggestions.Clear();
+        _noMatch = false;
+        _noMatchMessage = "No match. Add more clothes.";
+        _error = null;
+        _blocked = null;
+        _expandedSuggestions.Clear();
+        _saveFeedback.Clear();
+        _savingSuggestionSignatures.Clear();
+        StateHasChanged();
+
+        var seeds = new HashSet<string>(_untypedSeedIds, StringComparer.OrdinalIgnoreCase);
+        if (LockShirt && CurrentShirt != null) seeds.Add(CurrentShirt.GarmentId);
+        if (LockPants && CurrentPants != null) seeds.Add(CurrentPants.GarmentId);
+        if (LockShoes && CurrentShoes != null) seeds.Add(CurrentShoes.GarmentId);
+
+        if (LockShirt && CurrentShirt == null && _shirts.Count > 0) seeds.Add(_shirts[0].GarmentId);
+        if (LockPants && CurrentPants == null && _pants.Count > 0) seeds.Add(_pants[0].GarmentId);
+        if (LockShoes && CurrentShoes == null && _shoes.Count > 0) seeds.Add(_shoes[0].GarmentId);
+
+        if (seeds.Count == 0 && SeedGarmentIds != null)
+        {
+            foreach (var id in SeedGarmentIds.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()))
+                seeds.Add(id);
+        }
+        _lastRunSeedIds = seeds.ToList();
+
+        if (Env.IsDevelopment())
+        {
+            var selected = seeds.Select(id =>
+            {
+                var g = FindGarment(id);
+                var type = g == null ? "missing" : NormalizeTypeName(g.Type);
+                return $"{id}:{type}";
+            });
+
+            Logger.LogInformation(
+                "Matcher seed build user={UserId} locks(shirt={LockShirt},pants={LockPants},shoes={LockShoes}) current(shirt={ShirtId},pants={PantsId},shoes={ShoesId}) seeds=[{Seeds}]",
+                UserId,
+                LockShirt,
+                LockPants,
+                LockShoes,
+                CurrentShirt?.GarmentId ?? "<none>",
+                CurrentPants?.GarmentId ?? "<none>",
+                CurrentShoes?.GarmentId ?? "<none>",
+                string.Join(",", selected));
+        }
+
+        var matchTask = Matching.FindMatchesAsync(
+            UserId,
+            seeds.ToArray(),
+            Garments,
+            allowNoSeed: !RequireSeedSelection,
+            userRequest: string.IsNullOrWhiteSpace(UserRequest) ? null : UserRequest);
+        await RunProgressAsync(matchTask);
+        var res = await matchTask;
+
+        Running = false;
+
+        if (res.Blocked)
+        {
+            _blocked = res;
+            Status = "Matching is blocked by closet minimums.";
+        }
+        else if (res.NoEligible)
+        {
+            _noMatch = true;
+            _noMatchMessage = string.IsNullOrWhiteSpace(res.NoEligibleMessage)
+                ? "No suitable match found. Add more garments."
+                : res.NoEligibleMessage;
+            Status = _noMatchMessage;
+        }
+        else if (!res.Success)
+        {
+            _error = res.ErrorMessage ?? "Match failed.";
+            Status = "Match failed.";
+        }
+        else
+        {
+            Suggestions = res.Results.OrderBy(r => r.Rank).Take(3).ToList();
+            Status = "Match complete.";
+        }
+
+        StateHasChanged();
+    }
+
+    // הסבר: פונקציית הרצה מרכזית. מפעילה רצף של שלבים עסקיים עד לקבלת תוצאה מלאה.
+    private async Task RunProgressAsync(Task matchTask)
+    {
+        const int fullProgressMs = 40000;
+        const int quickFinishMs = 1000;
+        var stepCount = Math.Max(1, _progressSteps.Length);
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+
+        while (!matchTask.IsCompleted)
+        {
+            var elapsed = (int)Math.Min(timer.ElapsedMilliseconds, fullProgressMs);
+            var ratio = fullProgressMs == 0 ? 1d : elapsed / (double)fullProgressMs;
+            var targetPercent = Math.Clamp((int)Math.Round(ratio * 100), 2, 100);
+            if (targetPercent > _progressPercent)
+                _progressPercent = targetPercent;
+
+            var stepIndex = Math.Clamp((int)Math.Floor(ratio * stepCount), 0, stepCount - 1);
+            _progressStep = _progressSteps[stepIndex];
+
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(100);
+        }
+
+        if (_progressPercent < 100)
+        {
+            var remaining = 100 - _progressPercent;
+            var stepDelay = Math.Max(20, quickFinishMs / Math.Max(1, remaining));
+            while (_progressPercent < 100)
+            {
+                _progressPercent += 1;
+                _progressStep = _progressPercent >= 100 ? "Done" : _progressSteps[^1];
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(stepDelay);
+            }
+        }
+        else
+        {
+            _progressStep = "Done";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    private void ToggleSuggestion(int index)
+    {
+        if (_expandedSuggestions.Contains(index))
+            _expandedSuggestions.Remove(index);
+        else
+            _expandedSuggestions.Add(index);
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private static string SuggestionSignature(ScoredCombination suggestion) =>
+        $"{suggestion.ShirtId}|{suggestion.PantsId}|{suggestion.ShoesId}".ToLowerInvariant();
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private bool IsSuggestionSaveDisabled(ScoredCombination suggestion)
+    {
+        var signature = SuggestionSignature(suggestion);
+        return Running ||
+               _savingSuggestionSignatures.Contains(signature) ||
+               _savedSuggestionSignatures.Contains(signature);
+    }
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private string GetSuggestionSaveButtonText(ScoredCombination suggestion)
+    {
+        var signature = SuggestionSignature(suggestion);
+        if (_savedSuggestionSignatures.Contains(signature))
+            return "Saved";
+        if (_savingSuggestionSignatures.Contains(signature))
+            return "Saving...";
+        return "Save";
+    }
+
+    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    private async Task SaveSuggestionAsync(ScoredCombination suggestion)
+    {
+        var signature = SuggestionSignature(suggestion);
+        if (_savedSuggestionSignatures.Contains(signature) || _savingSuggestionSignatures.Contains(signature))
+            return;
+
+        _savingSuggestionSignatures.Add(signature);
+        _saveFeedback.Remove(signature);
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var save = await Matching.SaveOutfitSuggestionAsync(UserId, suggestion, _lastRunSeedIds);
+            if (save.Success || save.Duplicate)
+            {
+                _savedSuggestionSignatures.Add(signature);
+                _saveFeedback[signature] = (save.Message, false);
+                if (save.Success && OnMatchComplete.HasDelegate)
+                    await OnMatchComplete.InvokeAsync();
+            }
+            else
+            {
+                _saveFeedback[signature] = (string.IsNullOrWhiteSpace(save.Message) ? "Save failed." : save.Message, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _saveFeedback[signature] = ($"Save failed: {ex.Message}", true);
+        }
+        finally
+        {
+            _savingSuggestionSignatures.Remove(signature);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private Task Close() => OnClose.HasDelegate ? OnClose.InvokeAsync() : Task.CompletedTask;
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private static bool IsType(Garment g, string type) =>
+        string.Equals(NormalizeTypeName(g.Type), type, StringComparison.OrdinalIgnoreCase);
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private Garment? FindGarment(string id) =>
+        Garments.FirstOrDefault(g => string.Equals(g.GarmentId, id, StringComparison.OrdinalIgnoreCase));
+
+    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    private static string NormalizeTypeName(string? type)
+    {
+        var value = (type ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        if (value.Contains("shirt") || value.Contains("tee")) return "shirt";
+        if (value.Contains("pant") || value.Contains("trouser") || value.Contains("jean")) return "pants";
+        if (value.Contains("shoe") || value.Contains("sneaker") || value.Contains("boot")) return "shoes";
+        return string.Empty;
+    }
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private static string GetImageUrl(string garmentId) =>
+        $"/media/garments/by-garment/{garmentId}";
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private static int Mod(int x, int m) => (x % m + m) % m;
+
+}

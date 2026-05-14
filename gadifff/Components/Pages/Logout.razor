@@ -1,0 +1,17 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/logout"
+@inject gadifff.Services.IAuthService Auth
+@inject NavigationManager Nav
+
+<div class="page-shell">
+    <p>Signing you out...</p>
+</div>
+
+@code {
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+}

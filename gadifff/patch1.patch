@@ -1,0 +1,12 @@
+*** Begin Patch
+*** Update File: Services/MatchingService.cs
+@@
+-        public async Task<MatchingGateResult> CanMatchAsync(string userId)
+-        {
+-            var garments = await _garmentDb.GetByUserAsync(userId);
++        public async Task<MatchingGateResult> CanMatchAsync(string userId, IEnumerable<Garment>? garmentsOverride = null)
++        {
++            var garments = garmentsOverride?.ToList() ?? await _garmentDb.GetByUserAsync(userId);
+             var counts = BuildTypeCounts(garments);
+             var state = await GetOrInitStateAsync(userId);
+*** End Patch

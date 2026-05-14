@@ -1,0 +1,25 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar p-3">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-3 py-3 d-flex align-items-center justify-content-between">
+            <div class="fw-bold text-uppercase" style="letter-spacing:0.1em;">Access Surface</div>
+            <div class="text-muted small">Quiet interface. Fast actions.</div>
+        </div>
+
+        <article class="content px-1">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

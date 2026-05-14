@@ -1,0 +1,523 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/"
+@rendermode InteractiveServer
+
+@using System.Globalization
+@using DBL
+@using gadifff.Services
+@using Models
+
+@inject IAuthService AuthService
+@inject UserDB UserDb
+@inject GarmentDB GarmentDb
+@inject OutfitDB OutfitDb
+@inject NavigationManager Nav
+
+<PageTitle>Home</PageTitle>
+
+@if (!_loaded)
+{
+    <div class="home-loading-shell">
+        <div class="glass-panel home-loading">Initializing experience...</div>
+    </div>
+}
+else if (IsAdmin)
+{
+    <div class="page-shell">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Welcome, @_currentUser!.FullName</div>
+                <div class="section-subtitle">Admin overview</div>
+            </div>
+            <div class="action-group">
+                <button class="btn btn-outline-primary" @onclick="@(() => Nav.NavigateTo("/admin/closets"))">
+                    Open admin section
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_adminLoadError))
+        {
+            <div class="alert alert-warning">@_adminLoadError</div>
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Customers</div>
+                        <div class="fs-3 fw-bold">@_customerCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Admins</div>
+                        <div class="fs-3 fw-bold">@_adminCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Customer garments</div>
+                        <div class="fs-3 fw-bold">@_customerGarmentCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Saved outfits</div>
+                        <div class="fs-3 fw-bold">@_savedOutfitCount</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="fw-bold mb-2">Usage chart (last @_chartDays days)</div>
+                <div class="text-muted small mb-3">
+                    Users created, customer garments added, and outfits saved per day.
+                </div>
+                <div class="usage-chart-layout">
+                    <div class="usage-chart-visual">
+                        <svg viewBox="0 0 760 250"
+                             class="usage-chart-svg"
+                             @onmouseleave="ClearUsageHover">
+                            @if (_yAxisTicks.Count > 0)
+                            {
+                                @foreach (var tick in _yAxisTicks)
+                                {
+                                    <line x1="50" y1="@tick.Y" x2="730" y2="@tick.Y" class="usage-grid-line" />
+                                }
+                            }
+
+                            <line x1="50" y1="20" x2="50" y2="200" class="usage-axis-line" />
+                            <line x1="50" y1="200" x2="730" y2="200" class="usage-axis-line" />
+
+                            @if (_usersChartPoints.Count > 0 && ActiveUsageIndex >= 0 && ActiveUsageIndex < _usersChartPoints.Count)
+                            {
+                                var activeX = _usersChartPoints[ActiveUsageIndex].X;
+                                <line x1="@activeX" y1="20" x2="@activeX" y2="200" class="usage-active-line" />
+                            }
+
+                            @foreach (var point in _usersChartPoints)
+                            {
+                                var width = Math.Max(18d, _chartStepX);
+                                var left = Math.Max(50d, point.X - (width / 2d));
+                                var right = Math.Min(730d, point.X + (width / 2d));
+                                <rect x="@left"
+                                      y="20"
+                                      width="@(right - left)"
+                                      height="180"
+                                      class="usage-hit-zone @(point.Index == ActiveUsageIndex ? "is-active" : string.Empty)"
+                                      @onmouseover="() => HoverUsagePoint(point.Index)"
+                                      @onclick="() => SelectUsagePoint(point.Index)" />
+                            }
+
+                            <polyline points="@_usersLinePoints" class="usage-line users" />
+                            <polyline points="@_garmentsLinePoints" class="usage-line garments" />
+                            <polyline points="@_outfitsLinePoints" class="usage-line outfits" />
+
+                            @foreach (var point in _usersChartPoints)
+                            {
+                                var isActive = point.Index == ActiveUsageIndex;
+                                <circle cx="@point.X"
+                                        cy="@point.Y"
+                                        r="@(isActive ? 5.2 : 3.8)"
+                                        class="usage-point users @(isActive ? "is-active" : string.Empty)"
+                                        @onmouseover="() => HoverUsagePoint(point.Index)"
+                                        @onclick="() => SelectUsagePoint(point.Index)">
+                                    <title>@($"{point.Day:yyyy-MM-dd}: users {point.Value}")</title>
+                                </circle>
+                            }
+                            @foreach (var point in _garmentsChartPoints)
+                            {
+                                var isActive = point.Index == ActiveUsageIndex;
+                                <circle cx="@point.X"
+                                        cy="@point.Y"
+                                        r="@(isActive ? 5.2 : 3.8)"
+                                        class="usage-point garments @(isActive ? "is-active" : string.Empty)"
+                                        @onmouseover="() => HoverUsagePoint(point.Index)"
+                                        @onclick="() => SelectUsagePoint(point.Index)">
+                                    <title>@($"{point.Day:yyyy-MM-dd}: garments {point.Value}")</title>
+                                </circle>
+                            }
+                            @foreach (var point in _outfitsChartPoints)
+                            {
+                                var isActive = point.Index == ActiveUsageIndex;
+                                <circle cx="@point.X"
+                                        cy="@point.Y"
+                                        r="@(isActive ? 5.2 : 3.8)"
+                                        class="usage-point outfits @(isActive ? "is-active" : string.Empty)"
+                                        @onmouseover="() => HoverUsagePoint(point.Index)"
+                                        @onclick="() => SelectUsagePoint(point.Index)">
+                                    <title>@($"{point.Day:yyyy-MM-dd}: outfits {point.Value}")</title>
+                                </circle>
+                            }
+
+                        </svg>
+                    </div>
+
+                    @if (ActiveUsagePoint is { } activePoint)
+                    {
+                        <div class="usage-chart-details">
+                            <div class="usage-date">@activePoint.Day.ToString("dddd, MMM dd yyyy")</div>
+                            <div class="usage-details-row">
+                                <span class="dot users"></span>
+                                <span>Users created</span>
+                                <strong>@activePoint.UsersCreated</strong>
+                            </div>
+                            <div class="usage-details-row">
+                                <span class="dot garments"></span>
+                                <span>Garments added</span>
+                                <strong>@activePoint.GarmentsAdded</strong>
+                            </div>
+                            <div class="usage-details-row">
+                                <span class="dot outfits"></span>
+                                <span>Outfits saved</span>
+                                <strong>@activePoint.OutfitsSaved</strong>
+                            </div>
+                            <div class="usage-chart-max">Scale max: @_chartMaxValue</div>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex gap-3 flex-wrap mt-2 small usage-legend">
+                    <span><span class="legend-box users"></span> users</span>
+                    <span><span class="legend-box garments"></span> garments</span>
+                    <span><span class="legend-box outfits"></span> outfits</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="fw-bold mb-2">Daily usage</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Users</th>
+                                <th>Garments</th>
+                                <th>Outfits</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var point in _usage.OrderByDescending(x => x.Day))
+                            {
+                                <tr>
+                                    <td>@point.Day.ToString("yyyy-MM-dd")</td>
+                                    <td>@point.UsersCreated</td>
+                                    <td>@point.GarmentsAdded</td>
+                                    <td>@point.OutfitsSaved</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="landing-root">
+        <header class="landing-nav glass-panel reveal-in">
+            <a class="landing-brand" href="#top">Access Surface</a>
+
+            <nav class="landing-links" aria-label="Primary">
+                <a href="#about">About</a>
+                <a href="#model">Model</a>
+                <a href="#how">How it works</a>
+            </nav>
+
+            @if (_currentUser is null)
+            {
+                <div class="landing-nav-cta">
+                    <button class="btn btn-pill btn-primary" @onclick="@(() => Nav.NavigateTo("/register"))">Get Access</button>
+                    <button class="btn btn-pill" @onclick="@(() => Nav.NavigateTo("/login"))">Login</button>
+                </div>
+            }
+        </header>
+
+        <section id="top" class="landing-hero glass-panel reveal-in">
+            <p class="landing-eyebrow">Precision Recommendations</p>
+            <h1>One intelligent surface for access, guidance, and execution.</h1>
+            <p class="landing-lead">
+                Quiet interface, high-signal output. Navigate directly, authenticate fast, and move into your workspace without distraction.
+            </p>
+
+            @if (_currentUser is null)
+            {
+                <div class="landing-cta-row">
+                    <button class="btn btn-pill btn-primary" @onclick="@(() => Nav.NavigateTo("/register"))">Get Access</button>
+                    <button class="btn btn-pill" @onclick="@(() => Nav.NavigateTo("/login"))">Login</button>
+                </div>
+            }
+
+            @if (_currentUser is not null)
+            {
+                <div class="landing-user-chip">
+                    Signed in as <strong>@_currentUser.FullName</strong> (<span>@_currentUser.Role</span>)
+                </div>
+            }
+        </section>
+
+        <section id="about" class="landing-section glass-panel reveal-in">
+            <h2>About</h2>
+            <p>
+                This platform is built as a focused command center: authenticate quickly, understand the system in seconds,
+                and move straight to the tools you need.
+            </p>
+        </section>
+
+        <section id="model" class="landing-section glass-panel reveal-in">
+            <h2>The model we use</h2>
+            <p>
+                The recommendation layer runs on Gemini-based inference with structured prompts and deterministic post-processing.
+                The result is consistent reasoning with minimal visual noise in the interface.
+            </p>
+        </section>
+
+        <section id="how" class="landing-section glass-panel reveal-in">
+            <h2>How it works</h2>
+            <div class="how-grid">
+                <article class="how-step">
+                    <span>01</span>
+                    <h3>Authenticate</h3>
+                    <p>Use Get Access for onboarding, then Login to start a session.</p>
+                </article>
+                <article class="how-step">
+                    <span>02</span>
+                    <h3>Navigate</h3>
+                    <p>Jump directly from the landing surface to your workspace modules.</p>
+                </article>
+                <article class="how-step">
+                    <span>03</span>
+                    <h3>Execute</h3>
+                    <p>Run recommendations and workflows with a minimal, distraction-free UI.</p>
+                </article>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    private bool _loaded;
+    private User? _currentUser;
+    private string _adminLoadError = string.Empty;
+
+    private int _customerCount;
+    private int _adminCount;
+    private int _customerGarmentCount;
+    private int _savedOutfitCount;
+
+    private const int _chartDays = 14;
+    private const double ChartXMin = 50d;
+    private const double ChartXMax = 730d;
+    private const double ChartYTop = 20d;
+    private const double ChartYBottom = 200d;
+    private int _chartMaxValue = 1;
+    private List<UsagePoint> _usage = new();
+    private string _usersLinePoints = string.Empty;
+    private string _garmentsLinePoints = string.Empty;
+    private string _outfitsLinePoints = string.Empty;
+    private List<ChartPoint> _usersChartPoints = new();
+    private List<ChartPoint> _garmentsChartPoints = new();
+    private List<ChartPoint> _outfitsChartPoints = new();
+    private List<AxisTick> _yAxisTicks = new();
+    private int _selectedUsageIndex = -1;
+    private int _hoveredUsageIndex = -1;
+
+    private double _chartStepX => _usage.Count > 1
+        ? (ChartXMax - ChartXMin) / (_usage.Count - 1)
+        : 56d;
+
+    private int ActiveUsageIndex
+    {
+        get
+        {
+            if (_hoveredUsageIndex >= 0 && _hoveredUsageIndex < _usage.Count)
+                return _hoveredUsageIndex;
+            if (_selectedUsageIndex >= 0 && _selectedUsageIndex < _usage.Count)
+                return _selectedUsageIndex;
+            return _usage.Count == 0 ? -1 : _usage.Count - 1;
+        }
+    }
+
+    private UsagePoint? ActiveUsagePoint =>
+        ActiveUsageIndex >= 0 && ActiveUsageIndex < _usage.Count
+            ? _usage[ActiveUsageIndex]
+            : null;
+
+    private bool IsAdmin =>
+        _currentUser?.Role?.Equals("admin", StringComparison.OrdinalIgnoreCase) == true;
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _currentUser = await AuthService.CurrentUserAsync();
+        if (IsAdmin)
+            await LoadAdminDashboardAsync();
+
+        _loaded = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // הסבר: פונקציית טעינה. טוענת נתונים/קונפיג/משאבים לפני שימוש בשלבים הבאים.
+    private async Task LoadAdminDashboardAsync()
+    {
+        _adminLoadError = string.Empty;
+        try
+        {
+            _customerCount = await UserDb.CountByRoleAsync("customer");
+            _adminCount = await UserDb.CountByRoleAsync("admin");
+            _customerGarmentCount = await GarmentDb.CountByUserRoleAsync("customer");
+            _savedOutfitCount = await OutfitDb.CountByUserRoleAsync("customer");
+
+            var usersByDay = await UserDb.GetDailyCreatedCountsAsync(_chartDays);
+            var garmentsByDay = await GarmentDb.GetDailyCreatedCountsByUserRoleAsync(_chartDays, "customer");
+            var outfitsByDay = await OutfitDb.GetDailyCreatedCountsByUserRoleAsync(_chartDays, "customer");
+
+            BuildUsagePoints(
+                usersByDay,
+                garmentsByDay,
+                outfitsByDay);
+        }
+        catch (Exception ex)
+        {
+            _adminLoadError = $"Could not load admin statistics: {ex.Message}";
+        }
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private void BuildUsagePoints(
+        Dictionary<DateTime, int> usersByDay,
+        Dictionary<DateTime, int> garmentsByDay,
+        Dictionary<DateTime, int> outfitsByDay)
+    {
+        var today = DateTime.UtcNow.Date;
+        var start = today.AddDays(-(_chartDays - 1));
+        var points = new List<UsagePoint>(_chartDays);
+
+        for (var i = 0; i < _chartDays; i++)
+        {
+            var day = start.AddDays(i).Date;
+            points.Add(new UsagePoint(
+                day,
+                usersByDay.GetValueOrDefault(day),
+                garmentsByDay.GetValueOrDefault(day),
+                outfitsByDay.GetValueOrDefault(day)));
+        }
+
+        _usage = points;
+        _chartMaxValue = Math.Max(1, _usage.Max(x => Math.Max(x.UsersCreated, Math.Max(x.GarmentsAdded, x.OutfitsSaved))));
+        _usersChartPoints = BuildChartPoints(_usage, x => x.UsersCreated, _chartMaxValue);
+        _garmentsChartPoints = BuildChartPoints(_usage, x => x.GarmentsAdded, _chartMaxValue);
+        _outfitsChartPoints = BuildChartPoints(_usage, x => x.OutfitsSaved, _chartMaxValue);
+        _usersLinePoints = BuildLinePoints(_usersChartPoints);
+        _garmentsLinePoints = BuildLinePoints(_garmentsChartPoints);
+        _outfitsLinePoints = BuildLinePoints(_outfitsChartPoints);
+        _yAxisTicks = BuildAxisTicks(_chartMaxValue, 4);
+        _selectedUsageIndex = _usage.Count == 0 ? -1 : _usage.Count - 1;
+        _hoveredUsageIndex = -1;
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private static List<ChartPoint> BuildChartPoints(
+        IReadOnlyList<UsagePoint> points,
+        Func<UsagePoint, int> selector,
+        int maxValue)
+    {
+        if (points.Count == 0)
+            return new List<ChartPoint>();
+
+        var safeMax = Math.Max(1, maxValue);
+        var step = points.Count > 1 ? (ChartXMax - ChartXMin) / (points.Count - 1) : 0d;
+        var list = new List<ChartPoint>(points.Count);
+        for (var i = 0; i < points.Count; i++)
+        {
+            var value = Math.Clamp(selector(points[i]), 0, int.MaxValue);
+            var ratio = value / (double)safeMax;
+            var x = ChartXMin + (step * i);
+            var y = ChartYBottom - ((ChartYBottom - ChartYTop) * ratio);
+            list.Add(new ChartPoint(i, points[i].Day, value, x, y));
+        }
+
+        return list;
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private static string BuildLinePoints(IReadOnlyList<ChartPoint> points)
+    {
+        if (points.Count == 0)
+            return string.Empty;
+
+        var culture = CultureInfo.InvariantCulture;
+        return string.Join(' ', points.Select(x =>
+            $"{x.X.ToString("0.##", culture)},{x.Y.ToString("0.##", culture)}"));
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private static List<AxisTick> BuildAxisTicks(int maxValue, int sections)
+    {
+        var safeMax = Math.Max(1, maxValue);
+        var safeSections = Math.Max(2, sections);
+        var ticks = new List<AxisTick>(safeSections + 1);
+        for (var i = 0; i <= safeSections; i++)
+        {
+            var ratio = i / (double)safeSections;
+            var y = ChartYBottom - ((ChartYBottom - ChartYTop) * ratio);
+            var value = (int)Math.Round(safeMax * ratio);
+            ticks.Add(new AxisTick(y, value));
+        }
+
+        return ticks;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void SelectUsagePoint(int index)
+    {
+        _selectedUsageIndex = Math.Clamp(index, 0, Math.Max(0, _usage.Count - 1));
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void HoverUsagePoint(int index)
+    {
+        _hoveredUsageIndex = Math.Clamp(index, 0, Math.Max(0, _usage.Count - 1));
+    }
+
+    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    private void ClearUsageHover()
+    {
+        _hoveredUsageIndex = -1;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private readonly record struct UsagePoint(
+        DateTime Day,
+        int UsersCreated,
+        int GarmentsAdded,
+        int OutfitsSaved);
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private readonly record struct ChartPoint(
+        int Index,
+        DateTime Day,
+        int Value,
+        double X,
+        double Y);
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private readonly record struct AxisTick(
+        double Y,
+        int Value);
+}

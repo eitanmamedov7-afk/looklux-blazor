@@ -1,0 +1,508 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/admin/closets"
+@rendermode InteractiveServer
+
+@using Models
+@using DBL
+@using gadifff.Services
+@using BCryptNet = BCrypt.Net.BCrypt
+
+@inject IAuthService Auth
+@inject UserDB UserDb
+@inject GarmentDB GarmentDb
+@inject OutfitDB OutfitDb
+@inject OutfitGarmentDB OutfitGarmentDb
+@inject NavigationManager Nav
+
+<PageTitle>Admin Customers</PageTitle>
+
+<div class="page-shell">
+    <div class="section-header">
+        <div>
+            <div class="section-title">Admin Customers</div>
+            <div class="section-subtitle">Create accounts, update users, and manage closet/outfit access.</div>
+        </div>
+    </div>
+
+    @if (!_loaded)
+    {
+        <p>Loadingâ€¦</p>
+    }
+    else if (_mustLogin)
+    {
+        <div class="alert alert-warning">You must login.</div>
+        <button class="btn btn-primary" @onclick="@(() => Nav.NavigateTo("/login"))">Go to login</button>
+    }
+    else if (_notAllowed)
+    {
+        <p class="text-danger">Access denied.</p>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
+        }
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="fw-bold mb-2">Add account</div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-3">
+                        <input class="form-control form-control-sm" placeholder="Full name" @bind="_createFullName" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <input class="form-control form-control-sm" placeholder="Email" @bind="_createEmail" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <input type="password" class="form-control form-control-sm" placeholder="Password" @bind="_createPassword" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <select class="form-select form-select-sm" @bind="_createRole">
+                            <option value="customer">customer</option>
+                            <option value="admin">admin</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-1 d-grid">
+                        <button class="btn btn-sm btn-primary" @onclick="CreateUserAsync" disabled="@_busy">
+                            @(_busy ? "..." : "Add")
+                        </button>
+                    </div>
+                </div>
+                <div class="text-muted small mt-2">
+                    Admin accounts can only be created from this admin page.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Full name</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in _users)
+                            {
+                                var isSelf = string.Equals(u.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase);
+                                var isDirty = IsUserDirty(u);
+                                <tr>
+                                    <td>
+                                        <input class="form-control form-control-sm" @bind="u.Email" />
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm" @bind="u.FullName" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" @bind="u.Role" disabled="@(isSelf)">
+                                            <option value="customer">customer</option>
+                                            <option value="admin">admin</option>
+                                        </select>
+                                    </td>
+                                    <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary me-1"
+                                                @onclick="@(() => Nav.NavigateTo($"/admin/closet/{u.UserId}"))">
+                                            View Wardrobe
+                                        </button>
+                                        <button class="btn btn-sm me-1 @(isDirty ? "btn-primary" : "btn-outline-secondary")"
+                                                @onclick="() => SaveUserAsync(u)"
+                                                disabled="@(_busy || !isDirty)">
+                                            Save
+                                        </button>
+                                        <button class="btn btn-sm btn-danger"
+                                                @onclick="() => OpenDeleteUserDialog(u)"
+                                                disabled="@(_busy || isSelf)">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (_showDeleteUserDialog && _pendingDeleteUser != null)
+{
+    <div class="slot-overlay">
+        <div class="slot-panel confirm-modal">
+            <div class="fw-bold">Delete account</div>
+            <div class="text-muted">
+                Delete <strong>@_pendingDeleteUser.Email</strong> and all related garments/outfits? This cannot be undone.
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="CloseDeleteUserDialog"
+                        disabled="@_busy">
+                    Cancel
+                </button>
+                <button class="btn btn-sm btn-danger"
+                        @onclick="DeleteUserConfirmedAsync"
+                        disabled="@_busy">
+                    @(_busy ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loaded;
+    private bool _mustLogin;
+    private bool _notAllowed;
+    private bool _busy;
+    private bool _isError;
+    private string _message = string.Empty;
+    private User? _currentUser;
+    private List<User> _users = new();
+    private readonly Dictionary<string, string> _originalUserSnapshot = new(StringComparer.OrdinalIgnoreCase);
+    private bool _showDeleteUserDialog;
+    private User? _pendingDeleteUser;
+
+    private string _createFullName = string.Empty;
+    private string _createEmail = string.Empty;
+    private string _createPassword = string.Empty;
+    private string _createRole = "customer";
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUser = await Auth.CurrentUserAsync();
+        if (_currentUser == null)
+        {
+            _mustLogin = true;
+            _loaded = true;
+            return;
+        }
+
+        if (!string.Equals(_currentUser.Role, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            _notAllowed = true;
+            _loaded = true;
+            return;
+        }
+
+        await ReloadUsersAsync();
+        _loaded = true;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private async Task ReloadUsersAsync()
+    {
+        _users = (await UserDb.GetAllAsync())
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenBy(x => x.Email, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        _originalUserSnapshot.Clear();
+        foreach (var user in _users)
+            _originalUserSnapshot[user.UserId] = BuildUserSnapshot(user);
+    }
+
+    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    private async Task CreateUserAsync()
+    {
+        if (_busy)
+            return;
+
+        _busy = true;
+        ClearMessage();
+
+        try
+        {
+            var fullName = (_createFullName ?? string.Empty).Trim();
+            var email = (_createEmail ?? string.Empty).Trim().ToLowerInvariant();
+            var password = _createPassword ?? string.Empty;
+            var role = NormalizeRole(_createRole);
+
+            if (string.IsNullOrWhiteSpace(fullName) ||
+                string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(password))
+            {
+                SetError("Full name, email, and password are required.");
+                return;
+            }
+
+            if (password.Length < 6)
+            {
+                SetError("Password must be at least 6 characters.");
+                return;
+            }
+
+            var existing = await UserDb.GetByEmailAsync(email);
+            if (existing.Any())
+            {
+                SetError("Email already exists.");
+                return;
+            }
+
+            var user = new User
+            {
+                UserId = Guid.NewGuid().ToString(),
+                FullName = fullName,
+                Email = email,
+                Role = role,
+                PasswordHash = BCryptNet.HashPassword(password),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var created = await UserDb.CreateAsync(user);
+            if (created <= 0)
+            {
+                SetError("Could not create account.");
+                return;
+            }
+
+            _createFullName = string.Empty;
+            _createEmail = string.Empty;
+            _createPassword = string.Empty;
+            _createRole = "customer";
+
+            await ReloadUsersAsync();
+            SetSuccess($"Created {role} account.");
+        }
+        catch (Exception ex)
+        {
+            SetError($"Create failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    private async Task SaveUserAsync(User user)
+    {
+        if (_busy)
+            return;
+
+        _busy = true;
+        ClearMessage();
+
+        try
+        {
+            var email = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
+            var fullName = (user.FullName ?? string.Empty).Trim();
+            var role = NormalizeRole(user.Role);
+            var persistedUser = await UserDb.GetByIdAsync(user.UserId);
+
+            if (persistedUser == null)
+            {
+                SetError("User no longer exists.");
+                await ReloadUsersAsync();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
+            {
+                SetError("Email and full name are required.");
+                return;
+            }
+
+            var duplicate = await UserDb.GetByEmailAsync(email);
+            if (duplicate.Any(x => !string.Equals(x.UserId, user.UserId, StringComparison.OrdinalIgnoreCase)))
+            {
+                SetError("Another account already uses that email.");
+                return;
+            }
+
+            if (string.Equals(user.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase))
+            {
+                SetError("You cannot remove your own admin role.");
+                return;
+            }
+
+            var persistedRole = NormalizeRole(persistedUser.Role);
+            if (persistedRole == "admin" && role != "admin")
+            {
+                var adminCount = await UserDb.CountByRoleAsync("admin");
+                if (adminCount <= 1)
+                {
+                    SetError("Cannot remove the last admin account.");
+                    return;
+                }
+            }
+
+            user.Email = email;
+            user.FullName = fullName;
+            user.Role = role;
+
+            var updated = await UserDb.UpdateUserAsync(user);
+            if (updated <= 0)
+            {
+                SetError("No changes were saved.");
+                return;
+            }
+
+            await ReloadUsersAsync();
+            SetSuccess("User updated.");
+        }
+        catch (Exception ex)
+        {
+            SetError($"Save failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenDeleteUserDialog(User user)
+    {
+        if (_busy)
+            return;
+
+        _pendingDeleteUser = user;
+        _showDeleteUserDialog = true;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void CloseDeleteUserDialog()
+    {
+        _showDeleteUserDialog = false;
+        _pendingDeleteUser = null;
+    }
+
+    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    private async Task DeleteUserConfirmedAsync()
+    {
+        if (_pendingDeleteUser == null)
+            return;
+
+        await DeleteUserAsync(_pendingDeleteUser);
+        if (!_isError)
+            CloseDeleteUserDialog();
+    }
+
+    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    private async Task DeleteUserAsync(User user)
+    {
+        if (_busy)
+            return;
+
+        if (string.Equals(user.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase))
+        {
+            SetError("You cannot delete your own admin account.");
+            return;
+        }
+
+        _busy = true;
+        ClearMessage();
+
+        try
+        {
+            var persistedUser = await UserDb.GetByIdAsync(user.UserId);
+            if (persistedUser == null)
+            {
+                SetError("User no longer exists.");
+                await ReloadUsersAsync();
+                return;
+            }
+
+            var persistedRole = NormalizeRole(persistedUser.Role);
+            if (persistedRole == "admin")
+            {
+                var adminCount = await UserDb.CountByRoleAsync("admin");
+                if (adminCount <= 1)
+                {
+                    SetError("Cannot delete the last admin account.");
+                    return;
+                }
+            }
+
+            var outfits = await OutfitDb.GetByUserAsync(persistedUser.UserId, 2000);
+            foreach (var outfit in outfits)
+            {
+                await OutfitGarmentDb.DeleteByOutfitIdAsync(outfit.OutfitId);
+                await OutfitDb.DeleteOutfitAsync(outfit.OutfitId);
+            }
+
+            var garments = await GarmentDb.GetByUserAsync(persistedUser.UserId);
+            foreach (var garment in garments)
+            {
+                await GarmentDb.DeleteGarmentAsync(garment.GarmentId);
+            }
+
+            var deleted = await UserDb.DeleteUserAsync(persistedUser.UserId);
+            if (deleted <= 0)
+            {
+                SetError("Could not delete user.");
+                return;
+            }
+
+            await ReloadUsersAsync();
+            SetSuccess("User and related data deleted.");
+        }
+        catch (Exception ex)
+        {
+            SetError($"Delete failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private bool IsUserDirty(User user)
+    {
+        if (string.IsNullOrWhiteSpace(user.UserId))
+            return false;
+
+        if (!_originalUserSnapshot.TryGetValue(user.UserId, out var original))
+            return false;
+
+        return !string.Equals(original, BuildUserSnapshot(user), StringComparison.Ordinal);
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private static string BuildUserSnapshot(User user)
+    {
+        var email = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
+        var fullName = (user.FullName ?? string.Empty).Trim();
+        var role = NormalizeRole(user.Role);
+        return $"{email}|{fullName}|{role}";
+    }
+
+    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    private static string NormalizeRole(string? role)
+    {
+        var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized == "admin" ? "admin" : "customer";
+    }
+
+    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    private void ClearMessage()
+    {
+        _message = string.Empty;
+        _isError = false;
+    }
+
+    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    private void SetSuccess(string message)
+    {
+        _message = message;
+        _isError = false;
+    }
+
+    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    private void SetError(string message)
+    {
+        _message = message;
+        _isError = true;
+    }
+}

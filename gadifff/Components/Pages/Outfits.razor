@@ -1,0 +1,1124 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/outfits"
+@rendermode InteractiveServer
+@implements IDisposable
+
+@using Models
+@using DBL
+@using gadifff.Services
+
+@inject IAuthService Auth
+@inject UserDB UserDb
+@inject OutfitDB OutfitDb
+@inject OutfitGarmentDB OutfitGarmentDb
+@inject GarmentDB GarmentDb
+@inject NavigationManager Nav
+
+<PageTitle>Outfits</PageTitle>
+
+@if (!_loaded)
+{
+    <p>Loading...</p>
+}
+else if (_user == null)
+{
+    <div class="alert alert-warning">You must login.</div>
+}
+else
+{
+    <div class="page-shell">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Outfits</div>
+                <div class="section-subtitle">Saved matches with score, style, explanation, and where to wear.</div>
+            </div>
+            <div class="action-group">
+                <button class="btn btn-outline-primary" @onclick="OpenBestRecommendationWindow">Get Best Recommendations</button>
+            </div>
+        </div>
+
+        @if (_isAdminActingOnAnotherUser)
+        {
+            <div class="alert alert-info d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                <div>
+                    Admin mode: managing outfits for <strong>@_activeUserDisplayName</strong>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-primary" @onclick="OpenActiveUserCloset">
+                        Open closet
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ExitAdminActingMode">
+                        Back to my outfits
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (ShouldShowOutfitFilters)
+        {
+            <div class="filter-toolbar">
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="OpenOutfitFilterDrawer">
+                    Filters (@OutfitFilterSelectionCount)
+                </button>
+                @if (_filtersBusy)
+                {
+                    <span class="text-muted small">Updating...</span>
+                }
+                <div class="text-muted small filter-toolbar-summary">@ActiveFilterSummary</div>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_loadError))
+        {
+            <div class="alert alert-danger">
+                <div class="fw-bold">Could not load outfits.</div>
+                <div class="small">@_loadError</div>
+                <button class="btn btn-sm btn-outline-light mt-2" @onclick="RetryLoad">Retry</button>
+            </div>
+        }
+
+        @if (_outfits.Count == 0)
+        {
+            <div class="empty-state">
+                <div>No outfits yet.</div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var o in _outfits)
+                {
+                    var includedTypes = GetIncludedTypes(o);
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <div class="fw-bold">Score @o.Score (Rank @o.Rank)</div>
+                                    <div class="text-muted small">@o.CreatedAt.ToLocalTime().ToString("g")</div>
+                                </div>
+                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDeleteOutfitDialog(o.OutfitId)">
+                                    Delete outfit
+                                </button>
+                            </div>
+
+                            <div class="mb-2">
+                                <span class="badge me-1">@(string.IsNullOrWhiteSpace(o.StyleLabel) ? "style: n/a" : o.StyleLabel)</span>
+                                <span class="badge me-1">seed: @(string.IsNullOrWhiteSpace(o.SeedType) ? "unknown" : o.SeedType)</span>
+                                @foreach (var type in includedTypes)
+                                {
+                                    <span class="badge me-1">@type</span>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(o.Explanation))
+                            {
+                                <div class="text-muted small mb-2">@o.Explanation</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(o.RecommendedPlaces))
+                            {
+                                <div class="text-muted small mb-2">Where to wear: @o.RecommendedPlaces</div>
+                            }
+
+                            <div class="row row-cols-1 row-cols-md-3 g-2">
+                                @foreach (var gid in new[] { o.ShirtGarmentId, o.PantsGarmentId, o.ShoesGarmentId })
+                                {
+                                    if (gid is null) { continue; }
+                                    var g = _garmentMap.GetValueOrDefault(gid);
+                                    <div class="col">
+                                        <div class="card h-100">
+                                             <img class="card-img-top outfit-piece-image"
+                                                  src="@($"/media/garments/by-garment/{gid}")"
+                                                  loading="lazy"
+                                                  decoding="async"
+                                                  @onclick="() => OpenGarmentPreview(gid)"
+                                                  onerror="this.style.display='none';" />
+                                            <div class="card-body">
+                                                <div class="fw-bold">@g?.Type ?? "garment"</div>
+                                                <div class="text-muted">@g?.Color</div>
+                                                <div class="text-muted">@g?.Brand</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (ShouldShowOutfitFilters)
+        {
+            <div class="filter-drawer-shell @(_showOutfitFilterDrawer ? "is-open" : string.Empty)">
+                <button type="button"
+                        class="filter-drawer-backdrop"
+                        @onclick="CloseOutfitFilterDrawer"
+                        aria-label="Close outfit filters">
+                </button>
+
+                <aside class="filter-drawer-panel"
+                       role="dialog"
+                       aria-label="Outfit filters"
+                       aria-modal="true">
+                    @if (_activeOutfitFilterGroup == OutfitFilterGroup.None)
+                    {
+                        <div class="filter-drawer-header filter-drawer-header--summary">
+                            <div>
+                                <div class="fw-bold">Outfit filters</div>
+                                <div class="text-muted small">@ActiveFilterSummary</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    @onclick="CloseOutfitFilterDrawer">
+                                Close
+                            </button>
+                        </div>
+
+                        <div class="filter-drawer-groups">
+                            <button type="button" class="filter-group-item" @onclick="() => OpenOutfitFilterGroup(OutfitFilterGroup.Score)">
+                                <span>Formality score</span>
+                                <span class="filter-group-meta">@GetOutfitGroupSummary(OutfitFilterGroup.Score)</span>
+                            </button>
+                            <button type="button" class="filter-group-item" @onclick="() => OpenOutfitFilterGroup(OutfitFilterGroup.SeedType)">
+                                <span>Seed type</span>
+                                <span class="filter-group-meta">@GetOutfitGroupSummary(OutfitFilterGroup.SeedType)</span>
+                            </button>
+                            <button type="button" class="filter-group-item" @onclick="() => OpenOutfitFilterGroup(OutfitFilterGroup.Style)">
+                                <span>Style</span>
+                                <span class="filter-group-meta">@GetOutfitGroupSummary(OutfitFilterGroup.Style)</span>
+                            </button>
+                            <button type="button" class="filter-group-item" @onclick="() => OpenOutfitFilterGroup(OutfitFilterGroup.Occasion)">
+                                <span>Occasion</span>
+                                <span class="filter-group-meta">@GetOutfitGroupSummary(OutfitFilterGroup.Occasion)</span>
+                            </button>
+                            <button type="button" class="filter-group-item" @onclick="() => OpenOutfitFilterGroup(OutfitFilterGroup.Season)">
+                                <span>Season</span>
+                                <span class="filter-group-meta">@GetOutfitGroupSummary(OutfitFilterGroup.Season)</span>
+                            </button>
+                            <button type="button" class="filter-group-item" @onclick="() => OpenOutfitFilterGroup(OutfitFilterGroup.Place)">
+                                <span>Where to wear</span>
+                                <span class="filter-group-meta">@GetOutfitGroupSummary(OutfitFilterGroup.Place)</span>
+                            </button>
+                        </div>
+
+                        <div class="filter-drawer-footer">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    @onclick="ClearAllFilters"
+                                    disabled="@(!HasActiveFilters)">
+                                Clear all
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="filter-drawer-header">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    @onclick="BackToOutfitFilterGroups">
+                                Back
+                            </button>
+                            <div class="fw-bold">@GetOutfitFilterGroupTitle(_activeOutfitFilterGroup)</div>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    @onclick="CloseOutfitFilterDrawer">
+                                Close
+                            </button>
+                        </div>
+
+                        @if (_activeOutfitFilterGroup == OutfitFilterGroup.Score)
+                        {
+                            <div class="score-filter">
+                                <div class="d-flex justify-content-between">
+                                    <label class="form-label mb-1">Formality score range</label>
+                                    <span class="small text-muted">@_scoreMin - @_scoreMax</span>
+                                </div>
+                                <div class="range-stack">
+                                    <input type="range"
+                                           class="form-range"
+                                           min="40"
+                                           max="100"
+                                           value="@_scoreMin"
+                                           @oninput="OnMinScoreInput" />
+                                    <input type="range"
+                                           class="form-range"
+                                           min="40"
+                                           max="100"
+                                           value="@_scoreMax"
+                                           @oninput="OnMaxScoreInput" />
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="filter-drawer-controls">
+                                <input class="form-control form-control-sm"
+                                       placeholder="Search options..."
+                                       @bind="_outfitFilterSearch"
+                                       @bind:event="oninput" />
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        @onclick="ClearActiveOutfitGroupAsync">
+                                    Clear
+                                </button>
+                            </div>
+
+                            <div class="filter-drawer-options">
+                                @{
+                                    var options = GetVisibleOutfitOptions(_activeOutfitFilterGroup).ToList();
+                                }
+                                @if (options.Count == 0)
+                                {
+                                    <div class="text-muted small">No options</div>
+                                }
+                                else
+                                {
+                                    @foreach (var option in options)
+                                    {
+                                        var optionValue = option;
+                                        <label class="form-check filter-drawer-option">
+                                            <input type="checkbox"
+                                                   class="form-check-input"
+                                                   checked="@IsOutfitOptionSelected(_activeOutfitFilterGroup, optionValue)"
+                                                   @onchange="e => ToggleOutfitGroupOption(_activeOutfitFilterGroup, optionValue, e)" />
+                                            <span class="form-check-label">@optionValue</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        }
+                    }
+                </aside>
+            </div>
+        }
+    </div>
+}
+
+@if (_showMatcher && _user != null)
+{
+    <SlotMachineMatch UserId="@ActiveUserId"
+                      Garments="@(_matcherGarments.Count > 0 ? _matcherGarments : _allGarments)"
+                      UserRequest="_matcherRequest"
+                      SeedGarmentIds="_seedIds"
+                      AutoStart="_autoStart"
+                      RequireSeedSelection="_requireSeedSelection"
+                      OnClose="CloseMatcher"
+                      OnMatchComplete="Reload" />
+}
+
+@if (!string.IsNullOrWhiteSpace(_previewImageUrl))
+{
+    <div class="slot-overlay">
+        <div class="slot-panel preview-panel">
+            <div class="d-flex justify-content-end mb-2 preview-header">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseGarmentPreview">Close</button>
+            </div>
+            <img src="@_previewImageUrl"
+                 class="preview-image"
+                 onerror="this.style.display='none';" />
+        </div>
+    </div>
+}
+
+@if (_showBestRecommendationWindow)
+{
+    <div class="slot-overlay best-reco-overlay">
+        <div class="slot-panel best-reco-modal">
+            <div class="d-flex justify-content-between align-items-center mb-2 best-reco-header">
+                <div class="fw-bold best-reco-title">Best Recommendation Filters</div>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseBestRecommendationWindow">Close</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_bestRecommendationWindowError))
+            {
+                <div class="alert alert-warning">@_bestRecommendationWindowError</div>
+            }
+
+            <div class="best-reco-group">
+                <div class="fw-bold mb-2 best-reco-group-title">Outfit request (optional)</div>
+                <textarea class="form-control"
+                          rows="4"
+                          placeholder="Example: black sporty outfit for winter evenings"
+                          @bind="_bestRecommendationRequest"></textarea>
+                <div class="text-muted small best-reco-empty">
+                    Leave empty to run default best recommendations from your wardrobe.
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3 best-reco-actions">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseBestRecommendationWindow">Cancel</button>
+                <button class="btn btn-sm btn-primary" @onclick="ApplyBestRecommendationFiltersAndRunAsync">@OutfitBestRecommendationActionLabel</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeleteOutfitDialog)
+{
+    <div class="slot-overlay">
+        <div class="slot-panel confirm-modal">
+            <div class="fw-bold">Delete outfit</div>
+            @if (string.IsNullOrWhiteSpace(_deleteOutfitDialogMessage))
+            {
+                <div class="text-muted">This action cannot be undone.</div>
+            }
+            else
+            {
+                <div class="alert @(_deleteOutfitDialogIsError ? "alert-warning" : "alert-success") mb-0">
+                    @_deleteOutfitDialogMessage
+                </div>
+            }
+            <div class="d-flex justify-content-end gap-2">
+                @if (_deleteOutfitDialogCompleted)
+                {
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseDeleteOutfitDialog">Close</button>
+                }
+                else
+                {
+                    <button class="btn btn-sm btn-outline-secondary"
+                            @onclick="CloseDeleteOutfitDialog"
+                            disabled="@_deleteOutfitDialogBusy">
+                        Cancel
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                            @onclick="DeleteOutfitConfirmedAsync"
+                            disabled="@_deleteOutfitDialogBusy">
+                        @(_deleteOutfitDialogBusy ? "Deleting..." : "Delete")
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "asUserId")]
+    public string? AsUserId { get; set; }
+
+    private bool _loaded;
+    private User? _user;
+    private string _activeUserId = string.Empty;
+    private string _activeUserDisplayName = string.Empty;
+    private bool _isAdminActingOnAnotherUser;
+    private string _resolvedAsUserId = string.Empty;
+    private List<Outfit> _outfits = new();
+    private readonly Dictionary<string, List<OutfitGarment>> _outfitGarmentsByOutfit = new(StringComparer.OrdinalIgnoreCase);
+    private List<Garment> _allGarments = new();
+    private Dictionary<string, Garment> _garmentMap = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool _showMatcher;
+    private List<string> _seedIds = new();
+    private bool _autoStart;
+    private bool _requireSeedSelection = true;
+    private List<Garment> _matcherGarments = new();
+    private string _matcherRequest = string.Empty;
+
+    private OutfitFilterOptions _filterOptions = new();
+    private readonly HashSet<string> _selectedSeedTypes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _selectedStyleLabels = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _selectedOccasions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _selectedSeasons = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _selectedPlaces = new(StringComparer.OrdinalIgnoreCase);
+    private int _scoreMin = 40;
+    private int _scoreMax = 100;
+    private bool _filtersBusy;
+    private CancellationTokenSource? _filterCts;
+    private string? _loadError;
+    private bool _showOutfitFilterDrawer;
+    private OutfitFilterGroup _activeOutfitFilterGroup = OutfitFilterGroup.None;
+    private string _outfitFilterSearch = string.Empty;
+    private string? _previewImageUrl;
+    private bool _showDeleteOutfitDialog;
+    private string? _deleteOutfitId;
+    private string _deleteOutfitDialogMessage = string.Empty;
+    private bool _deleteOutfitDialogIsError;
+    private bool _deleteOutfitDialogBusy;
+    private bool _deleteOutfitDialogCompleted;
+    private bool _showBestRecommendationWindow;
+    private string _bestRecommendationWindowError = string.Empty;
+    private string _bestRecommendationRequest = string.Empty;
+    private string ActiveUserId => string.IsNullOrWhiteSpace(_activeUserId)
+        ? (_user?.UserId ?? string.Empty)
+        : _activeUserId;
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _user = await Auth.CurrentUserAsync();
+            if (_user != null)
+            {
+                await ResolveActiveUserContextAsync();
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            _loadError = ex.Message;
+        }
+        finally
+        {
+            _loaded = true;
+        }
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_user == null || !_loaded)
+            return;
+
+        var normalized = NormalizeAsUserId(AsUserId);
+        if (string.Equals(normalized, _resolvedAsUserId, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        await ResolveActiveUserContextAsync();
+        await LoadData();
+    }
+
+    // הסבר: פונקציית טעינה. טוענת נתונים/קונפיג/משאבים לפני שימוש בשלבים הבאים.
+    private async Task LoadData()
+    {
+        _loadError = null;
+        if (string.IsNullOrWhiteSpace(ActiveUserId))
+            return;
+
+        _allGarments = await GarmentDb.GetByUserAsync(ActiveUserId);
+        _garmentMap = _allGarments
+            .Where(g => !string.IsNullOrWhiteSpace(g.GarmentId))
+            .GroupBy(g => g.GarmentId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Last(), StringComparer.OrdinalIgnoreCase);
+        _matcherGarments = _allGarments.ToList();
+        await RefreshOutfitFiltersAsync(false);
+    }
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private static bool HasOptions(IReadOnlyCollection<string>? options) =>
+        options != null && options.Count > 0;
+
+    private bool HasActiveFilters =>
+        _scoreMin != 40 ||
+        _scoreMax != 100 ||
+        _selectedSeedTypes.Count > 0 ||
+        _selectedStyleLabels.Count > 0 ||
+        _selectedOccasions.Count > 0 ||
+        _selectedSeasons.Count > 0 ||
+        _selectedPlaces.Count > 0;
+
+    private bool ShouldShowOutfitFilters =>
+        _outfits.Count > 1 || HasActiveFilters;
+
+    private int OutfitFilterSelectionCount =>
+        (_scoreMin != 40 || _scoreMax != 100 ? 1 : 0) +
+        _selectedSeedTypes.Count +
+        _selectedStyleLabels.Count +
+        _selectedOccasions.Count +
+        _selectedSeasons.Count +
+        _selectedPlaces.Count;
+
+    private string ActiveFilterSummary
+    {
+        get
+        {
+            if (!HasActiveFilters)
+                return "All outfits (40-100)";
+
+            var parts = new List<string> { $"Score: {_scoreMin}-{_scoreMax}" };
+            if (_selectedSeedTypes.Count > 0) parts.Add($"Seed: {string.Join(", ", _selectedSeedTypes)}");
+            if (_selectedStyleLabels.Count > 0) parts.Add($"Style: {string.Join(", ", _selectedStyleLabels)}");
+            if (_selectedOccasions.Count > 0) parts.Add($"Occasion: {string.Join(", ", _selectedOccasions)}");
+            if (_selectedSeasons.Count > 0) parts.Add($"Season: {string.Join(", ", _selectedSeasons)}");
+            if (_selectedPlaces.Count > 0) parts.Add($"Place: {string.Join(", ", _selectedPlaces)}");
+            return string.Join(" | ", parts);
+        }
+    }
+
+    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    private OutfitFilterRequest BuildRequest() =>
+        new()
+        {
+            MinScore = _scoreMin,
+            MaxScore = _scoreMax,
+            SeedTypes = _selectedSeedTypes.Select(x => x.ToLowerInvariant()).ToList(),
+            StyleLabels = _selectedStyleLabels.Select(x => x.ToLowerInvariant()).ToList(),
+            Occasions = _selectedOccasions.Select(x => x.ToLowerInvariant()).ToList(),
+            Seasons = _selectedSeasons.Select(x => x.ToLowerInvariant()).ToList(),
+            RecommendedPlaces = _selectedPlaces.Select(x => x.ToLowerInvariant()).ToList()
+        };
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private async Task RefreshOutfitFiltersAsync(bool debounce)
+    {
+        if (_user == null || string.IsNullOrWhiteSpace(ActiveUserId))
+            return;
+
+        _filterCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _filterCts = cts;
+
+        try
+        {
+            if (debounce)
+                await Task.Delay(180, cts.Token);
+
+            _filtersBusy = true;
+            await InvokeAsync(StateHasChanged);
+
+            var request = BuildRequest();
+            _outfits = await OutfitDb.GetFilteredByUserAsync(ActiveUserId, request, 300);
+            if (cts.IsCancellationRequested) return;
+
+            _filterOptions = await OutfitDb.GetFilterOptionsAsync(ActiveUserId, request);
+            if (cts.IsCancellationRequested) return;
+
+            _outfitGarmentsByOutfit.Clear();
+            var links = await OutfitGarmentDb.GetByOutfitIdsAsync(_outfits.Select(x => x.OutfitId));
+            foreach (var group in links.GroupBy(x => x.OutfitId, StringComparer.OrdinalIgnoreCase))
+                _outfitGarmentsByOutfit[group.Key] = group.ToList();
+
+            Prune(_selectedSeedTypes, _filterOptions.SeedTypes);
+            Prune(_selectedStyleLabels, _filterOptions.StyleLabels);
+            Prune(_selectedOccasions, _filterOptions.Occasions);
+            Prune(_selectedSeasons, _filterOptions.Seasons);
+            Prune(_selectedPlaces, _filterOptions.RecommendedPlaces);
+
+            if (!ShouldShowOutfitFilters)
+                CloseOutfitFilterDrawer();
+        }
+        catch (TaskCanceledException)
+        {
+            // debounce cancellation
+        }
+        catch (Exception ex)
+        {
+            _loadError = ex.Message;
+        }
+        finally
+        {
+            if (ReferenceEquals(_filterCts, cts))
+            {
+                _filterCts = null;
+                _filtersBusy = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private static void Prune(HashSet<string> selected, IReadOnlyCollection<string>? available)
+    {
+        if (selected.Count == 0 || available == null || available.Count == 0)
+            return;
+
+        var availableSet = new HashSet<string>(available, StringComparer.OrdinalIgnoreCase);
+        selected.RemoveWhere(x => !availableSet.Contains(x));
+    }
+
+    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    private static HashSet<string> Normalize(HashSet<string> values) =>
+        new(values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim().ToLowerInvariant()),
+            StringComparer.OrdinalIgnoreCase);
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnSeedTypesChanged(HashSet<string> values)
+    {
+        _selectedSeedTypes.Clear();
+        _selectedSeedTypes.UnionWith(Normalize(values));
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnStyleLabelsChanged(HashSet<string> values)
+    {
+        _selectedStyleLabels.Clear();
+        _selectedStyleLabels.UnionWith(Normalize(values));
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnOccasionsChanged(HashSet<string> values)
+    {
+        _selectedOccasions.Clear();
+        _selectedOccasions.UnionWith(Normalize(values));
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnSeasonsChanged(HashSet<string> values)
+    {
+        _selectedSeasons.Clear();
+        _selectedSeasons.UnionWith(Normalize(values));
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnPlacesChanged(HashSet<string> values)
+    {
+        _selectedPlaces.Clear();
+        _selectedPlaces.UnionWith(Normalize(values));
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnMinScoreInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e?.Value?.ToString(), out var value))
+            _scoreMin = Math.Clamp(value, 40, _scoreMax);
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnMaxScoreInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e?.Value?.ToString(), out var value))
+            _scoreMax = Math.Clamp(value, Math.Max(40, _scoreMin), 100);
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    private async Task ClearAllFilters()
+    {
+        _scoreMin = 40;
+        _scoreMax = 100;
+        _selectedSeedTypes.Clear();
+        _selectedStyleLabels.Clear();
+        _selectedOccasions.Clear();
+        _selectedSeasons.Clear();
+        _selectedPlaces.Clear();
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenOutfitFilterDrawer()
+    {
+        if (!ShouldShowOutfitFilters)
+            return;
+
+        _showOutfitFilterDrawer = true;
+        _activeOutfitFilterGroup = OutfitFilterGroup.None;
+        _outfitFilterSearch = string.Empty;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void CloseOutfitFilterDrawer()
+    {
+        _showOutfitFilterDrawer = false;
+        _activeOutfitFilterGroup = OutfitFilterGroup.None;
+        _outfitFilterSearch = string.Empty;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenOutfitFilterGroup(OutfitFilterGroup group)
+    {
+        _activeOutfitFilterGroup = group;
+        _outfitFilterSearch = string.Empty;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void BackToOutfitFilterGroups()
+    {
+        _activeOutfitFilterGroup = OutfitFilterGroup.None;
+        _outfitFilterSearch = string.Empty;
+    }
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private string GetOutfitFilterGroupTitle(OutfitFilterGroup group) =>
+        group switch
+        {
+            OutfitFilterGroup.Score => "Formality score",
+            OutfitFilterGroup.SeedType => "Seed type",
+            OutfitFilterGroup.Style => "Style",
+            OutfitFilterGroup.Occasion => "Occasion",
+            OutfitFilterGroup.Season => "Season",
+            OutfitFilterGroup.Place => "Where to wear",
+            _ => "Filters"
+        };
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private string GetOutfitGroupSummary(OutfitFilterGroup group)
+    {
+        if (group == OutfitFilterGroup.Score)
+            return $"{_scoreMin}-{_scoreMax}";
+
+        var count = GetOutfitGroupSelectionCount(group);
+        return count == 0 ? "All" : $"{count} selected";
+    }
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private int GetOutfitGroupSelectionCount(OutfitFilterGroup group) =>
+        GetOutfitSelectionSet(group)?.Count ?? 0;
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private HashSet<string>? GetOutfitSelectionSet(OutfitFilterGroup group) =>
+        group switch
+        {
+            OutfitFilterGroup.SeedType => _selectedSeedTypes,
+            OutfitFilterGroup.Style => _selectedStyleLabels,
+            OutfitFilterGroup.Occasion => _selectedOccasions,
+            OutfitFilterGroup.Season => _selectedSeasons,
+            OutfitFilterGroup.Place => _selectedPlaces,
+            _ => null
+        };
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private IReadOnlyCollection<string> GetOutfitGroupOptions(OutfitFilterGroup group) =>
+        group switch
+        {
+            OutfitFilterGroup.SeedType => _filterOptions.SeedTypes,
+            OutfitFilterGroup.Style => _filterOptions.StyleLabels,
+            OutfitFilterGroup.Occasion => _filterOptions.Occasions,
+            OutfitFilterGroup.Season => _filterOptions.Seasons,
+            OutfitFilterGroup.Place => _filterOptions.RecommendedPlaces,
+            _ => Array.Empty<string>()
+        };
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private IEnumerable<string> GetVisibleOutfitOptions(OutfitFilterGroup group)
+    {
+        var options = GetOutfitGroupOptions(group);
+        if (string.IsNullOrWhiteSpace(_outfitFilterSearch))
+            return options;
+
+        var search = _outfitFilterSearch.Trim();
+        return options.Where(x => x.Contains(search, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private bool IsOutfitOptionSelected(OutfitFilterGroup group, string option)
+    {
+        var set = GetOutfitSelectionSet(group);
+        return set != null && set.Contains(option);
+    }
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private static bool IsChecked(ChangeEventArgs args) =>
+        args.Value is bool b
+            ? b
+            : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
+
+    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    private async Task ToggleOutfitGroupOption(OutfitFilterGroup group, string option, ChangeEventArgs args)
+    {
+        var set = GetOutfitSelectionSet(group);
+        if (set == null)
+            return;
+
+        var normalized = (option ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        if (IsChecked(args))
+            set.Add(normalized);
+        else
+            set.Remove(normalized);
+
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    private async Task ClearActiveOutfitGroupAsync()
+    {
+        var set = GetOutfitSelectionSet(_activeOutfitFilterGroup);
+        if (set == null)
+            return;
+
+        set.Clear();
+        await RefreshOutfitFiltersAsync(true);
+    }
+
+    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    private List<string> GetIncludedTypes(Outfit outfit)
+    {
+        if (_outfitGarmentsByOutfit.TryGetValue(outfit.OutfitId, out var links) && links.Count > 0)
+        {
+            return links
+                .Select(x => NormalizeTypeName(x.GarmentType))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var fallback = new List<string>();
+        if (!string.IsNullOrWhiteSpace(outfit.ShirtGarmentId)) fallback.Add("shirt");
+        if (!string.IsNullOrWhiteSpace(outfit.PantsGarmentId)) fallback.Add("pants");
+        if (!string.IsNullOrWhiteSpace(outfit.ShoesGarmentId)) fallback.Add("shoes");
+        return fallback;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenGarmentPreview(string garmentId)
+    {
+        if (string.IsNullOrWhiteSpace(garmentId))
+            return;
+
+        _previewImageUrl = $"/media/garments/by-garment/{garmentId}";
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void CloseGarmentPreview()
+    {
+        _previewImageUrl = null;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void StartNewMatch()
+    {
+        _matcherGarments = _allGarments.ToList();
+        _matcherRequest = string.Empty;
+        _seedIds = new();
+        _autoStart = false;
+        _requireSeedSelection = true;
+        _showMatcher = true;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void FindFromOutfit(Outfit outfit)
+    {
+        var seeds = new List<string>();
+
+        if (_outfitGarmentsByOutfit.TryGetValue(outfit.OutfitId, out var links) && links.Count > 0)
+        {
+            seeds.AddRange(links
+                .Where(x => x.IsSeed && !string.IsNullOrWhiteSpace(x.GarmentId))
+                .Select(x => x.GarmentId));
+        }
+
+        if (seeds.Count == 0 && !string.IsNullOrWhiteSpace(outfit.RequestedGarmentIds))
+        {
+            seeds.AddRange(outfit.RequestedGarmentIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+
+        if (seeds.Count == 0)
+        {
+            if (!string.IsNullOrEmpty(outfit.ShirtGarmentId)) seeds.Add(outfit.ShirtGarmentId);
+            if (!string.IsNullOrEmpty(outfit.PantsGarmentId)) seeds.Add(outfit.PantsGarmentId);
+            if (!string.IsNullOrEmpty(outfit.ShoesGarmentId)) seeds.Add(outfit.ShoesGarmentId);
+        }
+
+        _seedIds = seeds.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        _matcherGarments = _allGarments.ToList();
+        _matcherRequest = string.Empty;
+        _autoStart = true;
+        _requireSeedSelection = true;
+        _showMatcher = true;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void ConfirmDeleteOutfitDialog(string outfitId)
+    {
+        if (string.IsNullOrWhiteSpace(outfitId))
+            return;
+
+        _deleteOutfitId = outfitId;
+        _deleteOutfitDialogMessage = string.Empty;
+        _deleteOutfitDialogIsError = false;
+        _deleteOutfitDialogBusy = false;
+        _deleteOutfitDialogCompleted = false;
+        _showDeleteOutfitDialog = true;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void CloseDeleteOutfitDialog()
+    {
+        _showDeleteOutfitDialog = false;
+        _deleteOutfitId = null;
+        _deleteOutfitDialogMessage = string.Empty;
+        _deleteOutfitDialogIsError = false;
+        _deleteOutfitDialogBusy = false;
+        _deleteOutfitDialogCompleted = false;
+    }
+
+    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    private async Task DeleteOutfitConfirmedAsync()
+    {
+        if (_user == null || string.IsNullOrWhiteSpace(_deleteOutfitId) || _deleteOutfitDialogBusy)
+            return;
+
+        _deleteOutfitDialogBusy = true;
+        _deleteOutfitDialogMessage = string.Empty;
+        _deleteOutfitDialogIsError = false;
+        _deleteOutfitDialogCompleted = false;
+
+        try
+        {
+            await OutfitGarmentDb.DeleteByOutfitIdAsync(_deleteOutfitId);
+            var deleted = await OutfitDb.DeleteOutfitAsync(_deleteOutfitId);
+            if (deleted <= 0)
+            {
+                _deleteOutfitDialogIsError = true;
+                _deleteOutfitDialogMessage = "Could not delete this outfit.";
+                return;
+            }
+
+            _deleteOutfitDialogMessage = "Outfit deleted.";
+            _deleteOutfitDialogCompleted = true;
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            _deleteOutfitDialogIsError = true;
+            _deleteOutfitDialogMessage = $"Delete failed: {ex.Message}";
+        }
+        finally
+        {
+            _deleteOutfitDialogBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenBestRecommendationWindow()
+    {
+        _bestRecommendationWindowError = string.Empty;
+        _bestRecommendationRequest = string.Empty;
+        _showBestRecommendationWindow = true;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void CloseBestRecommendationWindow()
+    {
+        _showBestRecommendationWindow = false;
+        _bestRecommendationWindowError = string.Empty;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private async Task ApplyBestRecommendationFiltersAndRunAsync()
+    {
+        _bestRecommendationWindowError = string.Empty;
+        _showBestRecommendationWindow = false;
+        _matcherGarments = _allGarments.ToList();
+        _matcherRequest = string.IsNullOrWhiteSpace(_bestRecommendationRequest)
+            ? string.Empty
+            : _bestRecommendationRequest;
+        _seedIds = new();
+        _autoStart = true;
+        _requireSeedSelection = false;
+        _showMatcher = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string OutfitBestRecommendationActionLabel
+    {
+        get
+        {
+            return string.IsNullOrWhiteSpace(_bestRecommendationRequest)
+                ? "Start without request"
+                : "Start requested recommendation";
+        }
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private Task CloseMatcher()
+    {
+        _showMatcher = false;
+        _requireSeedSelection = true;
+        _matcherGarments = _allGarments.ToList();
+        _matcherRequest = string.Empty;
+        return Task.CompletedTask;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private async Task Reload()
+    {
+        if (_user == null)
+            return;
+
+        try
+        {
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _loadError = ex.Message;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private async Task RetryLoad()
+    {
+        await Reload();
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    public void Dispose()
+    {
+        _filterCts?.Cancel();
+        _filterCts?.Dispose();
+    }
+
+    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    private static string NormalizeAsUserId(string? asUserId) =>
+        (asUserId ?? string.Empty).Trim();
+
+    // הסבר: פונקציית resolve. מחליטה מה הערך/המקור הנכון לשימוש לפי סדר עדיפויות ברור.
+    private async Task ResolveActiveUserContextAsync()
+    {
+        if (_user == null)
+            return;
+
+        _resolvedAsUserId = NormalizeAsUserId(AsUserId);
+        _activeUserId = _user.UserId;
+        _activeUserDisplayName = string.IsNullOrWhiteSpace(_user.FullName)
+            ? (_user.Email ?? "current user")
+            : _user.FullName;
+        _isAdminActingOnAnotherUser = false;
+
+        if (string.IsNullOrWhiteSpace(_resolvedAsUserId) ||
+            !string.Equals(_user.Role, "admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_resolvedAsUserId, _user.UserId, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var targetUser = await UserDb.GetByIdAsync(_resolvedAsUserId);
+        if (targetUser == null)
+            return;
+
+        _activeUserId = targetUser.UserId;
+        _activeUserDisplayName = string.IsNullOrWhiteSpace(targetUser.FullName)
+            ? (targetUser.Email ?? "selected user")
+            : targetUser.FullName;
+        _isAdminActingOnAnotherUser = true;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenActiveUserCloset()
+    {
+        if (_isAdminActingOnAnotherUser && !string.IsNullOrWhiteSpace(ActiveUserId))
+        {
+            Nav.NavigateTo($"/closet?asUserId={Uri.EscapeDataString(ActiveUserId)}");
+            return;
+        }
+
+        Nav.NavigateTo("/closet");
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void ExitAdminActingMode()
+    {
+        Nav.NavigateTo("/outfits");
+    }
+
+    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    private static string NormalizeTypeName(string? type)
+    {
+        var value = (type ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        if (value.Contains("shirt") || value.Contains("tee")) return "shirt";
+        if (value.Contains("pant") || value.Contains("trouser") || value.Contains("jean")) return "pants";
+        if (value.Contains("shoe") || value.Contains("sneaker") || value.Contains("boot")) return "shoes";
+        return value;
+    }
+
+    private enum OutfitFilterGroup
+    {
+        None,
+        Score,
+        SeedType,
+        Style,
+        Occasion,
+        Season,
+        Place
+    }
+}

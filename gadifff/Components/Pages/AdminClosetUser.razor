@@ -1,0 +1,455 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/admin/closet/{UserId}"
+@rendermode InteractiveServer
+
+@using Models
+@using DBL
+@using gadifff.Services
+
+@inject IAuthService Auth
+@inject UserDB UserDb
+@inject GarmentDB GarmentDb
+@inject OutfitDB OutfitDb
+@inject OutfitGarmentDB OutfitGarmentDb
+@inject NavigationManager Nav
+
+<PageTitle>Customer data</PageTitle>
+
+@if (_notAllowed)
+{
+    <p class="text-danger">Access denied.</p>
+}
+else if (_loading)
+{
+    <p>Loading…</p>
+}
+else if (_targetUser is null)
+{
+    <p>User not found.</p>
+}
+else
+{
+    <div class="page-shell">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Customer data</div>
+                <div class="section-subtitle">Garments and saved outfits</div>
+                <div class="text-muted mt-1">@_targetUser.FullName (@_targetUser.Email)</div>
+            </div>
+            <div class="action-group">
+                <button class="btn btn-outline-primary"
+                        @onclick="OpenInteractiveCloset">
+                    Open Full Closet
+                </button>
+                <button class="btn btn-outline-primary"
+                        @onclick="OpenInteractiveOutfits">
+                    Open Full Outfits
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="GoBack">Back</button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Garments</div>
+                        <div class="fs-4 fw-bold">@_garments.Count</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Saved outfits</div>
+                        <div class="fs-4 fw-bold">@_outfits.Count</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Role</div>
+                        <div class="fs-4 fw-bold">@_targetUser.Role</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group mb-3" role="group" aria-label="Wardrobe view switch">
+            <button class="btn btn-sm @(_activeTab == ClosetTab.Garments ? "btn-primary" : "btn-outline-secondary")"
+                    @onclick="@(() => _activeTab = ClosetTab.Garments)">
+                Garments
+            </button>
+            <button class="btn btn-sm @(_activeTab == ClosetTab.Outfits ? "btn-primary" : "btn-outline-secondary")"
+                    @onclick="@(() => _activeTab = ClosetTab.Outfits)">
+                Outfits
+            </button>
+        </div>
+
+        @if (_activeTab == ClosetTab.Garments)
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="fw-bold mb-2">Garments</div>
+
+                    @if (_garments.Count == 0)
+                    {
+                        <div class="text-muted">No garments yet.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Preview</th>
+                                        <th>Type</th>
+                                        <th>Color</th>
+                                        <th>Brand</th>
+                                        <th>Created</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var g in _garments)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <img src="@($"/media/garments/by-garment/{g.GarmentId}")"
+                                                     style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #d7dce7;"
+                                                     onerror="this.style.display='none';" />
+                                            </td>
+                                            <td>@g.Type</td>
+                                            <td>@g.Color</td>
+                                            <td>@g.Brand</td>
+                                            <td>@g.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-danger"
+                                                        @onclick="() => OpenDeleteDialog(DeleteTarget.Garment, g.GarmentId)"
+                                                        disabled="@_busy">
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="fw-bold mb-2">Outfits</div>
+
+                    @if (_outfits.Count == 0)
+                    {
+                        <div class="text-muted">No outfits yet.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Score</th>
+                                        <th>Style</th>
+                                        <th>Pieces</th>
+                                        <th>Created</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var o in _outfits)
+                                    {
+                                        <tr>
+                                            <td>@o.Score</td>
+                                            <td>@(string.IsNullOrWhiteSpace(o.StyleLabel) ? "n/a" : o.StyleLabel)</td>
+                                            <td>@FormatOutfitPieces(o)</td>
+                                            <td>@o.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-danger"
+                                                        @onclick="() => OpenDeleteDialog(DeleteTarget.Outfit, o.OutfitId)"
+                                                        disabled="@_busy">
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_showDeleteDialog)
+{
+    <div class="slot-overlay">
+        <div class="slot-panel confirm-modal">
+            <div class="fw-bold">Delete @(_deleteTarget == DeleteTarget.Garment ? "garment" : "outfit")</div>
+            <div class="text-muted">This action cannot be undone.</div>
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="CloseDeleteDialog"
+                        disabled="@_busy">
+                    Cancel
+                </button>
+                <button class="btn btn-sm btn-danger"
+                        @onclick="ConfirmDeleteDialogAsync"
+                        disabled="@_busy">
+                    @(_busy ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+
+    private bool _loading = true;
+    private bool _notAllowed;
+    private bool _busy;
+    private bool _isError;
+    private string _message = string.Empty;
+
+    private User? _targetUser;
+    private List<Garment> _garments = new();
+    private List<Outfit> _outfits = new();
+    private Dictionary<string, Garment> _garmentById = new(StringComparer.OrdinalIgnoreCase);
+    private ClosetTab _activeTab = ClosetTab.Garments;
+    private bool _showDeleteDialog;
+    private DeleteTarget _deleteTarget;
+    private string _deleteTargetId = string.Empty;
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnInitializedAsync()
+    {
+        var current = await Auth.CurrentUserAsync();
+        if (current == null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        if (!string.Equals(current.Role, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            _notAllowed = true;
+            _loading = false;
+            return;
+        }
+
+        await LoadTargetDataAsync();
+        _loading = false;
+    }
+
+    // הסבר: פונקציית טעינה. טוענת נתונים/קונפיג/משאבים לפני שימוש בשלבים הבאים.
+    private async Task LoadTargetDataAsync()
+    {
+        _targetUser = await UserDb.GetByIdAsync(UserId);
+        if (_targetUser == null)
+            return;
+
+        _garments = await GarmentDb.GetByUserAsync(_targetUser.UserId);
+        _garmentById = _garments
+            .Where(x => !string.IsNullOrWhiteSpace(x.GarmentId))
+            .GroupBy(x => x.GarmentId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(x => x.Key, x => x.Last(), StringComparer.OrdinalIgnoreCase);
+
+        _outfits = (await OutfitDb.GetByUserAsync(_targetUser.UserId, 1500))
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
+    }
+
+    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    private async Task DeleteGarmentAsync(string garmentId)
+    {
+        if (_busy || string.IsNullOrWhiteSpace(garmentId))
+            return;
+
+        _busy = true;
+        ClearMessage();
+
+        try
+        {
+            var deleted = await GarmentDb.DeleteGarmentAsync(garmentId);
+            if (deleted <= 0)
+            {
+                SetError("Could not delete garment. Delete related outfits first if needed.");
+                return;
+            }
+
+            await LoadTargetDataAsync();
+            SetSuccess("Garment deleted.");
+        }
+        catch (Exception ex)
+        {
+            SetError($"Delete failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    private async Task DeleteOutfitAsync(string outfitId)
+    {
+        if (_busy || string.IsNullOrWhiteSpace(outfitId))
+            return;
+
+        _busy = true;
+        ClearMessage();
+
+        try
+        {
+            await OutfitGarmentDb.DeleteByOutfitIdAsync(outfitId);
+            var deleted = await OutfitDb.DeleteOutfitAsync(outfitId);
+            if (deleted <= 0)
+            {
+                SetError("Could not delete outfit.");
+                return;
+            }
+
+            await LoadTargetDataAsync();
+            SetSuccess("Outfit deleted.");
+        }
+        catch (Exception ex)
+        {
+            SetError($"Delete failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenDeleteDialog(DeleteTarget target, string targetId)
+    {
+        if (_busy || string.IsNullOrWhiteSpace(targetId))
+            return;
+
+        _deleteTarget = target;
+        _deleteTargetId = targetId;
+        _showDeleteDialog = true;
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void CloseDeleteDialog()
+    {
+        _showDeleteDialog = false;
+        _deleteTargetId = string.Empty;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private async Task ConfirmDeleteDialogAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_deleteTargetId))
+            return;
+
+        if (_deleteTarget == DeleteTarget.Garment)
+            await DeleteGarmentAsync(_deleteTargetId);
+        else
+            await DeleteOutfitAsync(_deleteTargetId);
+
+        if (!_isError)
+            CloseDeleteDialog();
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private string FormatOutfitPieces(Outfit outfit)
+    {
+        var parts = new List<string>();
+        AddPiece(parts, outfit.ShirtGarmentId);
+        AddPiece(parts, outfit.PantsGarmentId);
+        AddPiece(parts, outfit.ShoesGarmentId);
+        return string.Join(", ", parts);
+    }
+
+    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    private void AddPiece(List<string> parts, string? garmentId)
+    {
+        if (string.IsNullOrWhiteSpace(garmentId))
+            return;
+
+        if (_garmentById.TryGetValue(garmentId, out var garment) &&
+            !string.IsNullOrWhiteSpace(garment.Type))
+        {
+            parts.Add(garment.Type);
+            return;
+        }
+
+        parts.Add("piece");
+    }
+
+    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    private void ClearMessage()
+    {
+        _message = string.Empty;
+        _isError = false;
+    }
+
+    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    private void SetSuccess(string message)
+    {
+        _message = message;
+        _isError = false;
+    }
+
+    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    private void SetError(string message)
+    {
+        _message = message;
+        _isError = true;
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void GoBack()
+    {
+        Nav.NavigateTo("/admin/closets");
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenInteractiveCloset()
+    {
+        if (_targetUser == null)
+            return;
+
+        Nav.NavigateTo($"/closet?asUserId={Uri.EscapeDataString(_targetUser.UserId)}");
+    }
+
+    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    private void OpenInteractiveOutfits()
+    {
+        if (_targetUser == null)
+            return;
+
+        Nav.NavigateTo($"/outfits?asUserId={Uri.EscapeDataString(_targetUser.UserId)}");
+    }
+
+    private enum ClosetTab
+    {
+        Garments,
+        Outfits
+    }
+
+    private enum DeleteTarget
+    {
+        Garment,
+        Outfit
+    }
+}

@@ -1,0 +1,38 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error</PageTitle>
+
+<div class="page-shell">
+    <h1>Error</h1>
+    <h2 class="text-muted">An error occurred while processing your request.</h2>
+
+    @if (ShowRequestId)
+    {
+        <p>
+            <strong>Request ID:</strong> <code>@RequestId</code>
+        </p>
+    }
+
+    <h3>Development mode</h3>
+    <p class="text-muted">
+        Swapping to <strong>Development</strong> environment shows more detailed error information.
+    </p>
+    <p class="text-muted">
+        <strong>Do not enable Development in production.</strong>
+        It can expose sensitive exception details.
+    </p>
+</div>
+
+@code{
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

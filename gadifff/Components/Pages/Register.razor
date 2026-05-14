@@ -1,0 +1,141 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/register"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using gadifff.Services
+@using Models
+
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Get Access</PageTitle>
+
+<div class="page-shell">
+    <div class="row justify-content-center mt-1">
+        <div class="col-md-6 col-lg-5">
+            <h3 class="mb-4 text-center">Create customer account</h3>
+
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="alert @( _isError ? "alert-danger" : "alert-success")" role="alert">
+                    @_message
+                </div>
+            }
+
+            <EditForm Model="_model"
+                      OnValidSubmit="HandleRegisterAsync"
+                      FormName="register">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Full name</label>
+                    <InputText class="form-control" @bind-Value="_model.FullName" />
+                    <ValidationMessage For="@(() => _model.FullName)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <InputText class="form-control" @bind-Value="_model.Email" />
+                    <ValidationMessage For="@(() => _model.Email)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <InputText type="password" class="form-control" @bind-Value="_model.Password" />
+                    <ValidationMessage For="@(() => _model.Password)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Confirm password</label>
+                    <InputText type="password" class="form-control" @bind-Value="_model.ConfirmPassword" />
+                    <ValidationMessage For="@(() => _model.ConfirmPassword)" />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        Get Access
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            @onclick="GoToLogin">
+                        Back to sign in
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterModel _model = new();
+    private string _message = string.Empty;
+    private bool _isError;
+
+    // הסבר: פונקציית טיפול באירוע. מקבלת קלט מה־UI, מבצעת בדיקות, ואז מפעילה את הלוגיקה המתאימה.
+    private async Task HandleRegisterAsync()
+    {
+        _isError = false;
+        _message = string.Empty;
+
+        if (_model.Password != _model.ConfirmPassword)
+        {
+            _isError = true;
+            _message = "Passwords must match.";
+            return;
+        }
+
+        try
+        {
+            // שים לב לסדר: קודם Email ואז FullName לפי IAuthService
+            var ok = await AuthService.RegisterAsync(
+                _model.FullName.Trim(),
+                _model.Email.Trim(),
+                _model.Password,
+                "customer");
+
+            if (!ok)
+            {
+                _isError = true;
+                _message = "Registration failed. Email may already exist.";
+                return;
+            }
+
+            // התחברות אוטומטית אחרי הרשמה
+            await AuthService.LoginAsync(_model.Email.Trim(), _model.Password);
+
+            // מעבר ל-Home אחרי שהמשתמש מחובר
+            Nav.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = "Registration failed: " + ex.Message;
+        }
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    private void GoToLogin()
+    {
+        Nav.NavigateTo("/login");
+    }
+
+    public class RegisterModel
+    {
+        [Required]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+
+        [Required]
+        [Compare(nameof(Password), ErrorMessage = "Passwords must match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+    }
+}

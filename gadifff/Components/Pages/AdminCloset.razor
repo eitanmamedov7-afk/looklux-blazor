@@ -1,0 +1,19 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/admin/closet-guid/{UserId:guid}"
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+
+<PageTitle>Admin</PageTitle>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        Nav.NavigateTo($"/admin/closet/{UserId}");
+    }
+}

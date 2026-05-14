@@ -1,0 +1,90 @@
+﻿.top-row {
+    min-height: 3.5rem;
+    background: transparent;
+}
+
+.navbar-brand {
+    color: #fff;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.nav-item {
+    margin-bottom: 0.45rem;
+}
+
+.nav-item ::deep .nav-link {
+    color: #b5b5b5;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    min-height: 2.7rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.45rem 0.9rem;
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.nav-item ::deep a.active {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.13);
+    transform: translateY(-2px);
+}
+
+.nav-item ::deep .nav-link:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+}
+
+.nav-scrollable {
+    display: block;
+}
+
+.collapse.nav-scrollable {
+    display: none;
+}
+
+@media (min-width: 641px) {
+    .nav-scrollable,
+    .collapse.nav-scrollable {
+        display: block;
+        height: calc(100vh - 3.5rem);
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .top-row .d-flex {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .navbar-brand {
+        width: 100%;
+        text-align: center;
+    }
+
+    .top-row .btn {
+        width: 100%;
+    }
+
+    .nav-item ::deep .nav-link {
+        justify-content: center;
+        text-align: center;
+    }
+}

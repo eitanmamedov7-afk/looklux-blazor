@@ -1,0 +1,23 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@page "/admin/users"
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+
+<PageTitle>Admin</PageTitle>
+
+<div class="page-shell">
+    <div class="alert alert-info mb-0">
+        User management moved to <strong>Customers</strong>.
+    </div>
+</div>
+
+@code {
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        Nav.NavigateTo("/admin/closets");
+    }
+}

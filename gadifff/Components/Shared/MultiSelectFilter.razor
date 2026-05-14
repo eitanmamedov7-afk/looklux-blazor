@@ -1,0 +1,123 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@using System.Collections.Generic
+@using System.Linq
+
+<div class="multi-filter @(Disabled ? "is-disabled" : string.Empty)">
+    <label class="form-label">@Label</label>
+
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary multi-filter-trigger"
+            @onclick="ToggleOpen"
+            disabled="@Disabled">
+        @SelectedSummary
+    </button>
+
+    @if (_open && !Disabled)
+    {
+        <div class="multi-filter-panel">
+            <input class="form-control form-control-sm"
+                   placeholder="Search..."
+                   @bind="_search"
+                   @bind:event="oninput" />
+
+            <button type="button" class="btn btn-sm btn-light mt-2" @onclick="ClearSelection">
+                @AllLabel
+            </button>
+
+            <div class="multi-filter-options">
+                @if (!VisibleOptions.Any())
+                {
+                    <div class="text-muted small">No options</div>
+                }
+                else
+                {
+                    @foreach (var option in VisibleOptions)
+                    {
+                        var optionValue = option;
+                        <label class="form-check">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   checked="@IsSelected(optionValue)"
+                                   @onchange="(e => ToggleOption(optionValue, e))" />
+                            <span class="form-check-label">@optionValue</span>
+                        </label>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    @if (SelectedValues.Count > 0)
+    {
+        <div class="multi-filter-chips">
+            @foreach (var selected in SelectedValues.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+            {
+                var selectedValue = selected;
+                <button type="button"
+                        class="chip chip-remove"
+                        title="Remove"
+                        @onclick="(() => RemoveOption(selectedValue))">
+                    @selectedValue
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<string> Options { get; set; } = Array.Empty<string>();
+    [Parameter] public HashSet<string> SelectedValues { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    [Parameter] public EventCallback<HashSet<string>> SelectedValuesChanged { get; set; }
+    [Parameter] public string AllLabel { get; set; } = "All";
+    [Parameter] public bool Disabled { get; set; }
+
+    private string _search = string.Empty;
+    private bool _open;
+
+    private IEnumerable<string> VisibleOptions =>
+        string.IsNullOrWhiteSpace(_search)
+            ? Options
+            : Options.Where(o => o.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private string SelectedSummary =>
+        SelectedValues.Count == 0 ? AllLabel : $"{SelectedValues.Count} selected";
+
+    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    private bool IsSelected(string value) =>
+        SelectedValues.Contains(value);
+
+    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    private void ToggleOpen() => _open = !_open;
+
+    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    private Task ClearSelection()
+    {
+        _search = string.Empty;
+        return SelectedValuesChanged.InvokeAsync(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+    }
+
+    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    private Task RemoveOption(string value)
+    {
+        var next = new HashSet<string>(SelectedValues, StringComparer.OrdinalIgnoreCase);
+        next.Remove(value);
+        return SelectedValuesChanged.InvokeAsync(next);
+    }
+
+    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    private Task ToggleOption(string optionValue, ChangeEventArgs e)
+    {
+        var isChecked = e.Value is bool b
+            ? b
+            : bool.TryParse(e.Value?.ToString(), out var parsed) && parsed;
+
+        var next = new HashSet<string>(SelectedValues, StringComparer.OrdinalIgnoreCase);
+        if (isChecked)
+            next.Add(optionValue);
+        else
+            next.Remove(optionValue);
+
+        return SelectedValuesChanged.InvokeAsync(next);
+    }
+}

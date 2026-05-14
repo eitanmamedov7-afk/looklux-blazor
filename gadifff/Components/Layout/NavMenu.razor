@@ -1,0 +1,126 @@
+﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@rendermode InteractiveServer
+
+@using gadifff.Services
+@using Models
+
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+@implements IDisposable
+
+<div class="top-row navbar navbar-dark">
+    <div class="d-flex w-100 align-items-center justify-content-between">
+        <a class="navbar-brand" href="/">Access</a>
+        <button class="btn btn-sm btn-outline-primary d-md-none" @onclick="ToggleNavMenu">
+            Navigation
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable">
+    <nav class="flex-column mt-3">
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
+        </div>
+
+        @if (_currentUser is null)
+        {
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/login">Login</NavLink>
+            </div>
+
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/register">Get Access</NavLink>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/closet">Workspace</NavLink>
+            </div>
+
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/outfits">Recommendations</NavLink>
+            </div>
+
+            @if (IsAdmin)
+            {
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="/admin/closets">Customers</NavLink>
+                </div>
+            }
+
+            <div class="nav-item">
+                <a href="" class="nav-link"
+                   @onclick="OnLogoutClicked"
+                   @onclick:preventDefault="true">
+                    Logout
+                </a>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private User? _currentUser;
+    private bool _subscribed;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private bool IsAdmin =>
+        _currentUser?.Role?.Equals("admin", StringComparison.OrdinalIgnoreCase) == true;
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override Task OnInitializedAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        if (!_subscribed)
+        {
+            AuthService.AuthStateChanged += HandleAuthChanged;
+            _subscribed = true;
+        }
+
+        _currentUser = await AuthService.CurrentUserAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // הסבר: פונקציית טיפול באירוע. מקבלת קלט מה־UI, מבצעת בדיקות, ואז מפעילה את הלוגיקה המתאימה.
+    private async void HandleAuthChanged()
+    {
+        _currentUser = await AuthService.CurrentUserAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    private async Task OnLogoutClicked()
+    {
+        await AuthService.LogoutAsync();
+        _currentUser = null;
+        Nav.NavigateTo("/", false);
+    }
+
+    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    public void Dispose()
+    {
+        if (_subscribed)
+        {
+            AuthService.AuthStateChanged -= HandleAuthChanged;
+            _subscribed = false;
+        }
+    }
+}

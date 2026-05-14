@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             x:Class="gadifff.Mobile.MainPage"
+             ios:Page.UseSafeArea="True"
+             BackgroundColor="#0B0B0D">
+    <Grid>
+        <WebView x:Name="AppWebView"
+                 HorizontalOptions="FillAndExpand"
+                 VerticalOptions="FillAndExpand"
+                 Navigating="OnWebViewNavigating"
+                 Navigated="OnWebViewNavigated" />
+
+        <Grid x:Name="Overlay"
+              IsVisible="False"
+              BackgroundColor="#C00B0B0D"
+              Padding="24">
+            <ScrollView>
+                <VerticalStackLayout HorizontalOptions="FillAndExpand"
+                                     VerticalOptions="Center"
+                                     Spacing="10"
+                                      MaximumWidthRequest="560">
+                    <ActivityIndicator x:Name="LoadingIndicator"
+                                       IsVisible="False"
+                                       IsRunning="False"
+                                       Color="#FFFFFF"
+                                       HorizontalOptions="Center" />
+                    <Label x:Name="OverlayMessage"
+                           TextColor="#F2F2F2"
+                           LineBreakMode="WordWrap"
+                           HorizontalTextAlignment="Center" />
+                    <Entry x:Name="ServerUrlEntry"
+                           Placeholder="Server URL (example: http://192.168.1.33:7164)"
+                           Keyboard="Url"
+                           IsVisible="False"
+                           HorizontalOptions="FillAndExpand"
+                           TextColor="#FFFFFF"
+                           PlaceholderColor="#B8B8B8"
+                           BackgroundColor="#1E1E22" />
+                    <Button x:Name="SaveServerUrlButton"
+                            Text="Save URL &amp; Retry"
+                            IsVisible="False"
+                            Clicked="OnSaveServerUrlClicked"
+                            HorizontalOptions="FillAndExpand" />
+                    <Button x:Name="RetryButton"
+                            Text="Retry"
+                            IsVisible="False"
+                            Clicked="OnRetryClicked"
+                            HorizontalOptions="FillAndExpand" />
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+    </Grid>
+</ContentPage>

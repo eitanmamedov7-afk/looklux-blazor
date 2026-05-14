@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'gadifff.Mobile'">
+    <!-- Keep generated Android paths short in deep Windows folders -->
+    <BaseIntermediateOutputPath>C:\maui-obj\gadifff.Mobile\</BaseIntermediateOutputPath>
+    <BaseOutputPath>C:\maui-bin\gadifff.Mobile\</BaseOutputPath>
+  </PropertyGroup>
+</Project>
