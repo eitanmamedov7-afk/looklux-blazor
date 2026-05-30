@@ -1,379 +1,383 @@
-# מדריך בעברית לפרויקט (פשוט וברור ממבט ראשון)
+<!--
 
-## 1) מה הפרויקט עושה
-מערכת לניהול ארון בגדים והתאמת אאוטפיטים:
-- משתמש נרשם/מתחבר.
-- מעלה פריטי לבוש.
-- מתקבלת חלוקה לתכונות (AI).
-- המערכת מציעה התאמות אאוטפיט.
-- אפשר לשמור התאמות.
-- יש פאנל אדמין לניהול משתמשים.
-- יש תהליך איפוס סיסמה דרך אימייל.
 
----
 
-## 2) זרימה מלאה (End-to-End)
-1. הדפדפן מגיע ל־`App.razor` ואז `Routes.razor`.
-2. `MainLayout.razor` טוען את `NavMenu.razor`.
-3. דפי התחברות/הרשמה משתמשים ב־`IAuthService` (`AuthService` בפועל).
-4. דף `Closet` טוען פריטים מה־DB דרך `GarmentDB`, שומר תמונות דרך `GarmentImageDB`, ומנתח תכונות דרך `GarmentFeatureService` → `GeminiClient`.
-5. רכיב `SlotMachineMatch` מפעיל `MatchingService` שמייצר/מדרג התאמות ושומר אותן (`OutfitDB` + `OutfitGarmentDB`).
-6. דף `Outfits` מציג, מסנן ומוחק אאוטפיטים.
-7. איפוס סיסמה: `ForgotPassword` → `AuthService.SendPasswordResetEmailAsync` → `SmtpEmailSender`; אח"כ `ResetPassword` מעדכן hash ב־`UserDB`.
+
+# ×ž×“×¨×™×š ×‘×¢×‘×¨×™×ª ×œ×¤×¨×•×™×§×˜ (×¤×©×•×˜ ×•×‘×¨×•×¨ ×ž×ž×‘×˜ ×¨××©×•×Ÿ)
+
+## 1) ×ž×” ×”×¤×¨×•×™×§×˜ ×¢×•×©×”
+×ž×¢×¨×›×ª ×œ× ×™×”×•×œ ××¨×•×Ÿ ×‘×’×“×™× ×•×”×ª××ž×ª ×××•×˜×¤×™×˜×™×:
+- ×ž×©×ª×ž×© × ×¨×©×/×ž×ª×—×‘×¨.
+- ×ž×¢×œ×” ×¤×¨×™×˜×™ ×œ×‘×•×©.
+- ×ž×ª×§×‘×œ×ª ×—×œ×•×§×” ×œ×ª×›×•× ×•×ª (AI).
+- ×”×ž×¢×¨×›×ª ×ž×¦×™×¢×” ×”×ª××ž×•×ª ×××•×˜×¤×™×˜.
+- ××¤×©×¨ ×œ×©×ž×•×¨ ×”×ª××ž×•×ª.
+- ×™×© ×¤×× ×œ ××“×ž×™×Ÿ ×œ× ×™×”×•×œ ×ž×©×ª×ž×©×™×.
+- ×™×© ×ª×”×œ×™×š ××™×¤×•×¡ ×¡×™×¡×ž×” ×“×¨×š ××™×ž×™×™×œ.
 
 ---
 
-## 3) מפת קבצים – כל קובץ ומה הוא עושה
+## 2) ×–×¨×™×ž×” ×ž×œ××” (End-to-End)
+1. ×”×“×¤×“×¤×Ÿ ×ž×’×™×¢ ×œÖ¾`App.razor` ×•××– `Routes.razor`.
+2. `MainLayout.razor` ×˜×•×¢×Ÿ ××ª `NavMenu.razor`.
+3. ×“×¤×™ ×”×ª×—×‘×¨×•×ª/×”×¨×©×ž×” ×ž×©×ª×ž×©×™× ×‘Ö¾`IAuthService` (`AuthService` ×‘×¤×•×¢×œ).
+4. ×“×£ `Closet` ×˜×•×¢×Ÿ ×¤×¨×™×˜×™× ×ž×”Ö¾DB ×“×¨×š `GarmentDB`, ×©×•×ž×¨ ×ª×ž×•× ×•×ª ×“×¨×š `GarmentImageDB`, ×•×ž× ×ª×— ×ª×›×•× ×•×ª ×“×¨×š `GarmentFeatureService` â†’ `GeminiClient`.
+5. ×¨×›×™×‘ `SlotMachineMatch` ×ž×¤×¢×™×œ `MatchingService` ×©×ž×™×™×¦×¨/×ž×“×¨×’ ×”×ª××ž×•×ª ×•×©×•×ž×¨ ××•×ª×Ÿ (`OutfitDB` + `OutfitGarmentDB`).
+6. ×“×£ `Outfits` ×ž×¦×™×’, ×ž×¡× ×Ÿ ×•×ž×•×—×§ ×××•×˜×¤×™×˜×™×.
+7. ××™×¤×•×¡ ×¡×™×¡×ž×”: `ForgotPassword` â†’ `AuthService.SendPasswordResetEmailAsync` â†’ `SmtpEmailSender`; ××—"×› `ResetPassword` ×ž×¢×“×›×Ÿ hash ×‘Ö¾`UserDB`.
 
-## `gadifff` (אפליקציית Web Blazor)
-- `gadifff/Program.cs`  
-  אתחול האפליקציה: DI, Auth, API endpoints, SMTP options, קריאת קונפיג.
-- `gadifff/Components/App.razor`  
-  מעטפת HTML ראשית, טעינת CSS ו־`Routes`.
-- `gadifff/Components/Routes.razor`  
-  Router מרכזי לכל ה־pages.
-- `gadifff/Components/_Imports.razor`  
-  ייבוא namespaces גלובליים לרכיבים.
+---
+
+## 3) ×ž×¤×ª ×§×‘×¦×™× â€“ ×›×œ ×§×•×‘×¥ ×•×ž×” ×”×•× ×¢×•×©×”
+
+## `gadifff` (××¤×œ×™×§×¦×™×™×ª Web Blazor)
+- `gadifff/Program.cs`
+  ××ª×—×•×œ ×”××¤×œ×™×§×¦×™×”: DI, Auth, API endpoints, SMTP options, ×§×¨×™××ª ×§×•× ×¤×™×’.
+- `gadifff/Components/App.razor`
+  ×ž×¢×˜×¤×ª HTML ×¨××©×™×ª, ×˜×¢×™× ×ª CSS ×•Ö¾`Routes`.
+- `gadifff/Components/Routes.razor`
+  Router ×ž×¨×›×–×™ ×œ×›×œ ×”Ö¾pages.
+- `gadifff/Components/_Imports.razor`
+  ×™×™×‘×•× namespaces ×’×œ×•×‘×œ×™×™× ×œ×¨×›×™×‘×™×.
 
 ### Layout
-- `gadifff/Components/Layout/MainLayout.razor`  
-  מבנה עמוד: סיידבר + תוכן.
-- `gadifff/Components/Layout/MainLayout.razor.css`  
-  עיצוב למבנה הכללי.
-- `gadifff/Components/Layout/NavMenu.razor`  
-  ניווט דינמי לפי סטטוס משתמש/אדמין.
-- `gadifff/Components/Layout/NavMenu.razor.css`  
-  עיצוב התפריט.
+- `gadifff/Components/Layout/MainLayout.razor`
+  ×ž×‘× ×” ×¢×ž×•×“: ×¡×™×™×“×‘×¨ + ×ª×•×›×Ÿ.
+- `gadifff/Components/Layout/MainLayout.razor.css`
+  ×¢×™×¦×•×‘ ×œ×ž×‘× ×” ×”×›×œ×œ×™.
+- `gadifff/Components/Layout/NavMenu.razor`
+  × ×™×•×•×˜ ×“×™× ×ž×™ ×œ×¤×™ ×¡×˜×˜×•×¡ ×ž×©×ª×ž×©/××“×ž×™×Ÿ.
+- `gadifff/Components/Layout/NavMenu.razor.css`
+  ×¢×™×¦×•×‘ ×”×ª×¤×¨×™×˜.
 
 ### Shared Components
-- `gadifff/Components/Shared/MultiSelectFilter.razor`  
-  קומפוננטה רב־בחירה עם חיפוש וצ'יפים.
-- `gadifff/Components/Shared/SlotMachineMatch.razor`  
-  רכיב התאמות אינטראקטיבי: seed, הרצה, תוצאות, שמירה.
+- `gadifff/Components/Shared/MultiSelectFilter.razor`
+  ×§×•×ž×¤×•× × ×˜×” ×¨×‘Ö¾×‘×—×™×¨×” ×¢× ×—×™×¤×•×© ×•×¦'×™×¤×™×.
+- `gadifff/Components/Shared/SlotMachineMatch.razor`
+  ×¨×›×™×‘ ×”×ª××ž×•×ª ××™× ×˜×¨××§×˜×™×‘×™: seed, ×”×¨×¦×”, ×ª×•×¦××•×ª, ×©×ž×™×¨×”.
 
 ### Pages
-- `gadifff/Components/Pages/Home.razor`  
-  דף בית (משתמש רגיל/אדמין).
-- `gadifff/Components/Pages/Login.razor`  
-  התחברות.
-- `gadifff/Components/Pages/Register.razor`  
-  הרשמה.
-- `gadifff/Components/Pages/Logout.razor`  
-  יציאה מהמערכת.
-- `gadifff/Components/Pages/ForgotPassword.razor`  
-  בקשת מייל איפוס סיסמה.
-- `gadifff/Components/Pages/ResetPassword.razor`  
-  קביעת סיסמה חדשה מטוקן.
-- `gadifff/Components/Pages/Closet.razor`  
-  ניהול ארון, העלאות, סינונים, פתיחת מנוע התאמות.
-- `gadifff/Components/Pages/Outfits.razor`  
-  תצוגת אאוטפיטים שמורים, סינונים, מחיקה, התאמה מחדש.
-- `gadifff/Components/Pages/AdminClosets.razor`  
-  ניהול משתמשים (אדמין): יצירה, עריכה, מחיקה.
-- `gadifff/Components/Pages/AdminClosetUser.razor`  
-  צפייה/ניהול ארון ואאוטפיטים של משתמש ספציפי.
-- `gadifff/Components/Pages/AdminUsers.razor`  
-  דף redirect היסטורי ל־AdminClosets.
-- `gadifff/Components/Pages/AdminCloset.razor`  
-  דף redirect `/admin/closet-guid/{id}` אל `/admin/closet/{id}`.
-- `gadifff/Components/Pages/AccessDenied.razor`  
-  הודעת חוסר הרשאה.
-- `gadifff/Components/Pages/Error.razor`  
-  עמוד שגיאה כללי.
+- `gadifff/Components/Pages/Home.razor`
+  ×“×£ ×‘×™×ª (×ž×©×ª×ž×© ×¨×’×™×œ/××“×ž×™×Ÿ).
+- `gadifff/Components/Pages/Login.razor`
+  ×”×ª×—×‘×¨×•×ª.
+- `gadifff/Components/Pages/Register.razor`
+  ×”×¨×©×ž×”.
+- `gadifff/Components/Pages/Logout.razor`
+  ×™×¦×™××” ×ž×”×ž×¢×¨×›×ª.
+- `gadifff/Components/Pages/ForgotPassword.razor`
+  ×‘×§×©×ª ×ž×™×™×œ ××™×¤×•×¡ ×¡×™×¡×ž×”.
+- `gadifff/Components/Pages/ResetPassword.razor`
+  ×§×‘×™×¢×ª ×¡×™×¡×ž×” ×—×“×©×” ×ž×˜×•×§×Ÿ.
+- `gadifff/Components/Pages/Closet.razor`
+  × ×™×”×•×œ ××¨×•×Ÿ, ×”×¢×œ××•×ª, ×¡×™× ×•× ×™×, ×¤×ª×™×—×ª ×ž× ×•×¢ ×”×ª××ž×•×ª.
+- `gadifff/Components/Pages/Outfits.razor`
+  ×ª×¦×•×’×ª ×××•×˜×¤×™×˜×™× ×©×ž×•×¨×™×, ×¡×™× ×•× ×™×, ×ž×—×™×§×”, ×”×ª××ž×” ×ž×—×“×©.
+- `gadifff/Components/Pages/AdminClosets.razor`
+  × ×™×”×•×œ ×ž×©×ª×ž×©×™× (××“×ž×™×Ÿ): ×™×¦×™×¨×”, ×¢×¨×™×›×”, ×ž×—×™×§×”.
+- `gadifff/Components/Pages/AdminClosetUser.razor`
+  ×¦×¤×™×™×”/× ×™×”×•×œ ××¨×•×Ÿ ×•×××•×˜×¤×™×˜×™× ×©×œ ×ž×©×ª×ž×© ×¡×¤×¦×™×¤×™.
+- `gadifff/Components/Pages/AdminUsers.razor`
+  ×“×£ redirect ×”×™×¡×˜×•×¨×™ ×œÖ¾AdminClosets.
+- `gadifff/Components/Pages/AdminCloset.razor`
+  ×“×£ redirect `/admin/closet-guid/{id}` ××œ `/admin/closet/{id}`.
+- `gadifff/Components/Pages/AccessDenied.razor`
+  ×”×•×“×¢×ª ×—×•×¡×¨ ×”×¨×©××”.
+- `gadifff/Components/Pages/Error.razor`
+  ×¢×ž×•×“ ×©×’×™××” ×›×œ×œ×™.
 
 ### Services
-- `gadifff/Services/IAuthService.cs`  
-  חוזה פעולות auth.
-- `gadifff/Services/AuthService.cs`  
-  מימוש auth: login/register/logout + reset password.
-- `gadifff/Services/PasswordResetEmailStatus.cs`  
-  סטטוסים לתוצאת שליחת איפוס סיסמה.
-- `gadifff/Services/IEmailSender.cs`  
-  חוזה לשליחת אימייל.
-- `gadifff/Services/SmtpEmailSender.cs`  
-  מימוש SMTP אמיתי (host/port/user/pass).
-- `gadifff/Services/SmtpOptions.cs`  
-  מודל קונפיג SMTP.
-- `gadifff/Services/GeminiClient.cs`  
-  לקוח HTTP ל־Gemini.
-- `gadifff/Services/GarmentFeatureService.cs`  
-  הפקת JSON תכונות מפריט לבוש מתוך תמונה.
-- `gadifff/Services/MatchingService.cs`  
-  לוגיקת התאמות אאוטפיט, ניקוד, שמירה, fallback.
+- `gadifff/Services/IAuthService.cs`
+  ×—×•×–×” ×¤×¢×•×œ×•×ª auth.
+- `gadifff/Services/AuthService.cs`
+  ×ž×™×ž×•×© auth: login/register/logout + reset password.
+- `gadifff/Services/PasswordResetEmailStatus.cs`
+  ×¡×˜×˜×•×¡×™× ×œ×ª×•×¦××ª ×©×œ×™×—×ª ××™×¤×•×¡ ×¡×™×¡×ž×”.
+- `gadifff/Services/IEmailSender.cs`
+  ×—×•×–×” ×œ×©×œ×™×—×ª ××™×ž×™×™×œ.
+- `gadifff/Services/SmtpEmailSender.cs`
+  ×ž×™×ž×•×© SMTP ××ž×™×ª×™ (host/port/user/pass).
+- `gadifff/Services/SmtpOptions.cs`
+  ×ž×•×“×œ ×§×•× ×¤×™×’ SMTP.
+- `gadifff/Services/GeminiClient.cs`
+  ×œ×§×•×— HTTP ×œÖ¾Gemini.
+- `gadifff/Services/GarmentFeatureService.cs`
+  ×”×¤×§×ª JSON ×ª×›×•× ×•×ª ×ž×¤×¨×™×˜ ×œ×‘×•×© ×ž×ª×•×š ×ª×ž×•× ×”.
+- `gadifff/Services/MatchingService.cs`
+  ×œ×•×’×™×§×ª ×”×ª××ž×•×ª ×××•×˜×¤×™×˜, × ×™×§×•×“, ×©×ž×™×¨×”, fallback.
 
 ### Static
-- `gadifff/wwwroot/app.css`  
-  עיצוב מותאם אפליקציה.
-- `gadifff/wwwroot/bootstrap/bootstrap.min.css`  
-  קובץ vendor (Bootstrap) – לא עורכים ידנית.
+- `gadifff/wwwroot/app.css`
+  ×¢×™×¦×•×‘ ×ž×•×ª×× ××¤×œ×™×§×¦×™×”.
+- `gadifff/wwwroot/bootstrap/bootstrap.min.css`
+  ×§×•×‘×¥ vendor (Bootstrap) â€“ ×œ× ×¢×•×¨×›×™× ×™×“× ×™×ª.
 
 ## `ConsoleApp2` (Models)
-- `ConsoleApp2/User.cs` – מודל משתמש.
-- `ConsoleApp2/Garment.cs` – מודל פריט לבוש.
-- `ConsoleApp2/Outfit.cs` – מודל אאוטפיט.
-- `ConsoleApp2/OutfitGarment.cs` – קשר פריט↔אאוטפיט.
-- `ConsoleApp2/Style.cs` – מודל סגנון.
-- `ConsoleApp2/Recommendation.cs` – מודל המלצה.
-- `ConsoleApp2/UserMatchingState.cs` – מצב lockout/דרישות התאמה למשתמש.
-- `ConsoleApp2/FilterModels.cs` – בקשות/אפשרויות סינון + normalize.
-- `ConsoleApp2/Program.cs` – placeholder בלבד.
+- `ConsoleApp2/User.cs` â€“ ×ž×•×“×œ ×ž×©×ª×ž×©.
+- `ConsoleApp2/Garment.cs` â€“ ×ž×•×“×œ ×¤×¨×™×˜ ×œ×‘×•×©.
+- `ConsoleApp2/Outfit.cs` â€“ ×ž×•×“×œ ×××•×˜×¤×™×˜.
+- `ConsoleApp2/OutfitGarment.cs` â€“ ×§×©×¨ ×¤×¨×™×˜â†”×××•×˜×¤×™×˜.
+- `ConsoleApp2/Style.cs` â€“ ×ž×•×“×œ ×¡×’× ×•×Ÿ.
+- `ConsoleApp2/Recommendation.cs` â€“ ×ž×•×“×œ ×”×ž×œ×¦×”.
+- `ConsoleApp2/UserMatchingState.cs` â€“ ×ž×¦×‘ lockout/×“×¨×™×©×•×ª ×”×ª××ž×” ×œ×ž×©×ª×ž×©.
+- `ConsoleApp2/FilterModels.cs` â€“ ×‘×§×©×•×ª/××¤×©×¨×•×™×•×ª ×¡×™× ×•×Ÿ + normalize.
+- `ConsoleApp2/Program.cs` â€“ placeholder ×‘×œ×‘×“.
 
 ## `ConsoleApp1` (Data Access / DBL)
-- `ConsoleApp1/DB.cs` – בסיס חיבור MySQL ו־command/reader.
-- `ConsoleApp1/BaseDB.cs` – CRUD generic + בניית SQL פרמטרי.
-- `ConsoleApp1/UserDB.cs` – גישת נתוני משתמשים.
-- `ConsoleApp1/StyleDB.cs` – גישת נתוני סגנונות.
-- `ConsoleApp1/GarmentDB.cs` – גישת נתוני ארון (פריטים + פילטרים).
-- `ConsoleApp1/GarmentImageDB.cs` – שמירה/שליפה של תמונות בינאריות.
-- `ConsoleApp1/OutfitDB.cs` – גישת אאוטפיטים + פילטרים + תאימות סכמות.
-- `ConsoleApp1/OutfitGarmentDB.cs` – גישת טבלת קשר אאוטפיט־פריטים.
-- `ConsoleApp1/UserMatchingStateDB.cs` – מצב התאמות פר משתמש (upsert).
-- `ConsoleApp1/Pogram.cs` – placeholder בלבד.
+- `ConsoleApp1/DB.cs` â€“ ×‘×¡×™×¡ ×—×™×‘×•×¨ MySQL ×•Ö¾command/reader.
+- `ConsoleApp1/BaseDB.cs` â€“ CRUD generic + ×‘× ×™×™×ª SQL ×¤×¨×ž×˜×¨×™.
+- `ConsoleApp1/UserDB.cs` â€“ ×’×™×©×ª × ×ª×•× ×™ ×ž×©×ª×ž×©×™×.
+- `ConsoleApp1/StyleDB.cs` â€“ ×’×™×©×ª × ×ª×•× ×™ ×¡×’× ×•× ×•×ª.
+- `ConsoleApp1/GarmentDB.cs` â€“ ×’×™×©×ª × ×ª×•× ×™ ××¨×•×Ÿ (×¤×¨×™×˜×™× + ×¤×™×œ×˜×¨×™×).
+- `ConsoleApp1/GarmentImageDB.cs` â€“ ×©×ž×™×¨×”/×©×œ×™×¤×” ×©×œ ×ª×ž×•× ×•×ª ×‘×™× ××¨×™×•×ª.
+- `ConsoleApp1/OutfitDB.cs` â€“ ×’×™×©×ª ×××•×˜×¤×™×˜×™× + ×¤×™×œ×˜×¨×™× + ×ª××™×ž×•×ª ×¡×›×ž×•×ª.
+- `ConsoleApp1/OutfitGarmentDB.cs` â€“ ×’×™×©×ª ×˜×‘×œ×ª ×§×©×¨ ×××•×˜×¤×™×˜Ö¾×¤×¨×™×˜×™×.
+- `ConsoleApp1/UserMatchingStateDB.cs` â€“ ×ž×¦×‘ ×”×ª××ž×•×ª ×¤×¨ ×ž×©×ª×ž×© (upsert).
+- `ConsoleApp1/Pogram.cs` â€“ placeholder ×‘×œ×‘×“.
 
 ---
 
-## 4) הסבר פונקציות ובלוקים (בעברית, לפי קובץ)
+## 4) ×”×¡×‘×¨ ×¤×•× ×§×¦×™×•×ª ×•×‘×œ×•×§×™× (×‘×¢×‘×¨×™×ª, ×œ×¤×™ ×§×•×‘×¥)
 
 ## `gadifff/Program.cs`
-### בלוקי קוד
-- **Configuration**: טוען `appsettings`, `secrets`, משתני סביבה.
-- **DI Registration**: רושם DB classes, Services, Auth, SMTP.
+### ×‘×œ×•×§×™ ×§×•×“
+- **Configuration**: ×˜×•×¢×Ÿ `appsettings`, `secrets`, ×ž×©×ª× ×™ ×¡×‘×™×‘×”.
+- **DI Registration**: ×¨×•×©× DB classes, Services, Auth, SMTP.
 - **Middleware**: `UseStaticFiles`, `UseRouting`, `UseAuthentication`, `UseAuthorization`, `UseAntiforgery`.
 - **API Endpoints**: media image endpoint + closet/outfits filter endpoints.
-- **Razor Components**: מיפוי UI.
+- **Razor Components**: ×ž×™×¤×•×™ UI.
 
-### פונקציות
-- `LogGarmentPromptConfiguration`  
-  מסביר בלוגים מאיפה נטען פרומפט ניתוח תמונה.
-- `LogGeminiConfiguration`  
-  מסביר בלוגים אם API key ל־Gemini קיים.
-- `ResolvePromptPath`  
-  ממיר path יחסי למלא.
-- `ParseGarmentFilterRequest` / `ParseOutfitFilterRequest`  
-  בונה מודלי פילטר מה־query string.
-- `ReadList`  
-  קורא רשימות מה־query, מנקה duplicates ורווחים.
-- `ApplyLegacySmtpOverrides`  
-  ממפה גם פורמט env ישן (`SMTP_*`) אל `SmtpOptions`.
-- `FirstNonEmpty`  
-  מחזיר הערך הלא ריק הראשון.
-- `TryParseBool`  
-  parse לבוליאני כולל `yes/no/on/off/1/0`.
+### ×¤×•× ×§×¦×™×•×ª
+- `LogGarmentPromptConfiguration`
+  ×ž×¡×‘×™×¨ ×‘×œ×•×’×™× ×ž××™×¤×” × ×˜×¢×Ÿ ×¤×¨×•×ž×¤×˜ × ×™×ª×•×— ×ª×ž×•× ×”.
+- `LogGeminiConfiguration`
+  ×ž×¡×‘×™×¨ ×‘×œ×•×’×™× ×× API key ×œÖ¾Gemini ×§×™×™×.
+- `ResolvePromptPath`
+  ×ž×ž×™×¨ path ×™×—×¡×™ ×œ×ž×œ×.
+- `ParseGarmentFilterRequest` / `ParseOutfitFilterRequest`
+  ×‘×•× ×” ×ž×•×“×œ×™ ×¤×™×œ×˜×¨ ×ž×”Ö¾query string.
+- `ReadList`
+  ×§×•×¨× ×¨×©×™×ž×•×ª ×ž×”Ö¾query, ×ž× ×§×” duplicates ×•×¨×•×•×—×™×.
+- `ApplyLegacySmtpOverrides`
+  ×ž×ž×¤×” ×’× ×¤×•×¨×ž×˜ env ×™×©×Ÿ (`SMTP_*`) ××œ `SmtpOptions`.
+- `FirstNonEmpty`
+  ×ž×—×–×™×¨ ×”×¢×¨×š ×”×œ× ×¨×™×§ ×”×¨××©×•×Ÿ.
+- `TryParseBool`
+  parse ×œ×‘×•×œ×™×× ×™ ×›×•×œ×œ `yes/no/on/off/1/0`.
 
 ## `gadifff/Services/AuthService.cs`
-### למה הקובץ קיים
-מרכז את כל הלוגיקה של משתמשים והתחברות.
+### ×œ×ž×” ×”×§×•×‘×¥ ×§×™×™×
+×ž×¨×›×– ××ª ×›×œ ×”×œ×•×’×™×§×” ×©×œ ×ž×©×ª×ž×©×™× ×•×”×ª×—×‘×¨×•×ª.
 
-### פונקציות
-- `NotifyAuthChanged`  
-  שולח event ל־UI שהמשתמש השתנה.
-- `LoginAsync`  
-  מאמת אימייל+סיסמה מול hash.
-- `LogoutAsync`  
-  מנקה user נוכחי.
-- `RegisterAsync`  
-  יוצר משתמש חדש עם hash.
-- `SendPasswordResetEmailAsync`  
-  בודק אם אימייל קיים, מייצר טוקן מוגן לזמן מוגבל, ושולח לינק.
-- `ResetPasswordAsync`  
-  מאמת טוקן + תוקף, ומעדכן hash חדש.
-- `CurrentUserAsync`  
-  מחזיר את המשתמש הנוכחי בזיכרון.
+### ×¤×•× ×§×¦×™×•×ª
+- `NotifyAuthChanged`
+  ×©×•×œ×— event ×œÖ¾UI ×©×”×ž×©×ª×ž×© ×”×©×ª× ×”.
+- `LoginAsync`
+  ×ž××ž×ª ××™×ž×™×™×œ+×¡×™×¡×ž×” ×ž×•×œ hash.
+- `LogoutAsync`
+  ×ž× ×§×” user × ×•×›×—×™.
+- `RegisterAsync`
+  ×™×•×¦×¨ ×ž×©×ª×ž×© ×—×“×© ×¢× hash.
+- `SendPasswordResetEmailAsync`
+  ×‘×•×“×§ ×× ××™×ž×™×™×œ ×§×™×™×, ×ž×™×™×¦×¨ ×˜×•×§×Ÿ ×ž×•×’×Ÿ ×œ×–×ž×Ÿ ×ž×•×’×‘×œ, ×•×©×•×œ×— ×œ×™× ×§.
+- `ResetPasswordAsync`
+  ×ž××ž×ª ×˜×•×§×Ÿ + ×ª×•×§×£, ×•×ž×¢×“×›×Ÿ hash ×—×“×©.
+- `CurrentUserAsync`
+  ×ž×—×–×™×¨ ××ª ×”×ž×©×ª×ž×© ×”× ×•×›×—×™ ×‘×–×™×›×¨×•×Ÿ.
 
 ## `gadifff/Services/SmtpEmailSender.cs`
-- `SendAsync`  
-  בונה `MailMessage`, פותח `SmtpClient`, שולח אימייל, ומחזיר הצלחה/כישלון.
+- `SendAsync`
+  ×‘×•× ×” `MailMessage`, ×¤×•×ª×— `SmtpClient`, ×©×•×œ×— ××™×ž×™×™×œ, ×•×ž×—×–×™×¨ ×”×¦×œ×—×”/×›×™×©×œ×•×Ÿ.
 
 ## `gadifff/Services/GeminiClient.cs`
-### זרימה
-1. בודק שיש API Key.  
-2. שולח בקשת `generateContent`.  
-3. אם model לא קיים – fallback ל־`gemini-2.5-flash`.  
-4. מחלץ text מה־JSON response.
+### ×–×¨×™×ž×”
+1. ×‘×•×“×§ ×©×™×© API Key.
+2. ×©×•×œ×— ×‘×§×©×ª `generateContent`.
+3. ×× model ×œ× ×§×™×™× â€“ fallback ×œÖ¾`gemini-2.5-flash`.
+4. ×ž×—×œ×¥ text ×ž×”Ö¾JSON response.
 
-### פונקציות
-- `GenerateAsync` – orchestration מלא של קריאה ל־Gemini.
-- `SendRequestAsync` – POST HTTP עם payload.
-- `BuildParts` – בונה חלקי prompt + image base64.
-- `NormalizeModel` – מנקה/מנרמל שם מודל.
-- `ResolveApiKey` – מחפש key במשתני סביבה נתמכים.
-- `Shorten` – קיצור טקסט ללוגים.
+### ×¤×•× ×§×¦×™×•×ª
+- `GenerateAsync` â€“ orchestration ×ž×œ× ×©×œ ×§×¨×™××” ×œÖ¾Gemini.
+- `SendRequestAsync` â€“ POST HTTP ×¢× payload.
+- `BuildParts` â€“ ×‘×•× ×” ×—×œ×§×™ prompt + image base64.
+- `NormalizeModel` â€“ ×ž× ×§×”/×ž× ×¨×ž×œ ×©× ×ž×•×“×œ.
+- `ResolveApiKey` â€“ ×ž×—×¤×© key ×‘×ž×©×ª× ×™ ×¡×‘×™×‘×” × ×ª×ž×›×™×.
+- `Shorten` â€“ ×§×™×¦×•×¨ ×˜×§×¡×˜ ×œ×œ×•×’×™×.
 
 ## `gadifff/Services/GarmentFeatureService.cs`
-### זרימה
-1. טוען prompt (Config/קובץ/Built-in).  
-2. שולח ל־Gemini.  
-3. מנקה תשובה ל־JSON נקי.  
-4. מאמת JSON; אם לא תקין זורק שגיאה.
+### ×–×¨×™×ž×”
+1. ×˜×•×¢×Ÿ prompt (Config/×§×•×‘×¥/Built-in).
+2. ×©×•×œ×— ×œÖ¾Gemini.
+3. ×ž× ×§×” ×ª×©×•×‘×” ×œÖ¾JSON × ×§×™.
+4. ×ž××ž×ª JSON; ×× ×œ× ×ª×§×™×Ÿ ×–×•×¨×§ ×©×’×™××”.
 
-### פונקציות
-- `ExtractFromImageAsync` – ניתוח תמונה לתכונות JSON.
-- `LoadPromptAsync` – בחירת מקור פרומפט.
-- `NormalizeJson` – ניקוי markdown/code fences.
-- `ResolvePromptPath` – path לקובץ פרומפט.
+### ×¤×•× ×§×¦×™×•×ª
+- `ExtractFromImageAsync` â€“ × ×™×ª×•×— ×ª×ž×•× ×” ×œ×ª×›×•× ×•×ª JSON.
+- `LoadPromptAsync` â€“ ×‘×—×™×¨×ª ×ž×§×•×¨ ×¤×¨×•×ž×¤×˜.
+- `NormalizeJson` â€“ × ×™×§×•×™ markdown/code fences.
+- `ResolvePromptPath` â€“ path ×œ×§×•×‘×¥ ×¤×¨×•×ž×¤×˜.
 
-## `gadifff/Services/MatchingService.cs` (קובץ גדול)
-### בלוק 1: State/Gate
-- `GetOrInitStateAsync`, `CanMatchAsync`, `RecordFailureAsync`, `RecordSuccessAsync`  
-  מנהל תנאי סף למשתמש לפני התאמה.
+## `gadifff/Services/MatchingService.cs` (×§×•×‘×¥ ×’×“×•×œ)
+### ×‘×œ×•×§ 1: State/Gate
+- `GetOrInitStateAsync`, `CanMatchAsync`, `RecordFailureAsync`, `RecordSuccessAsync`
+  ×ž× ×”×œ ×ª× ××™ ×¡×£ ×œ×ž×©×ª×ž×© ×œ×¤× ×™ ×”×ª××ž×”.
 
-### בלוק 2: התאמה ראשית
-- `FindMatchesAsync`  
-  בונה seed + pools, מייצר קומבינציות, מדרג, מחזיר Top תוצאות.
+### ×‘×œ×•×§ 2: ×”×ª××ž×” ×¨××©×™×ª
+- `FindMatchesAsync`
+  ×‘×•× ×” seed + pools, ×ž×™×™×¦×¨ ×§×•×ž×‘×™× ×¦×™×•×ª, ×ž×“×¨×’, ×ž×—×–×™×¨ Top ×ª×•×¦××•×ª.
 
-### בלוק 3: שמירה
-- `SaveOutfitSuggestionAsync` + `BuildOutfitGarments`  
-  שומר תוצאת התאמה לטבלאות outfits/outfit_garments.
+### ×‘×œ×•×§ 3: ×©×ž×™×¨×”
+- `SaveOutfitSuggestionAsync` + `BuildOutfitGarments`
+  ×©×•×ž×¨ ×ª×•×¦××ª ×”×ª××ž×” ×œ×˜×‘×œ××•×ª outfits/outfit_garments.
 
-### בלוק 4: יצירת קומבינציות וניקוד
-- `BuildCombinations`, `ScoreCombinationsAsync`, `LoadScoringPromptAsync`, `BuildMatchPrompt`  
-  מכין מועמדים ושולח ל־Gemini לציון.
+### ×‘×œ×•×§ 4: ×™×¦×™×¨×ª ×§×•×ž×‘×™× ×¦×™×•×ª ×•× ×™×§×•×“
+- `BuildCombinations`, `ScoreCombinationsAsync`, `LoadScoringPromptAsync`, `BuildMatchPrompt`
+  ×ž×›×™×Ÿ ×ž×•×¢×ž×“×™× ×•×©×•×œ×— ×œÖ¾Gemini ×œ×¦×™×•×Ÿ.
 
-### בלוק 5: Parsing/Normalization
-- `ParseScoringOutcome`, `ParseRecommendationArray`, `TryParseRecommendationItem` ועוד  
-  מפענח JSON מה־AI ומגן מפני פורמטים שונים.
+### ×‘×œ×•×§ 5: Parsing/Normalization
+- `ParseScoringOutcome`, `ParseRecommendationArray`, `TryParseRecommendationItem` ×•×¢×•×“
+  ×ž×¤×¢× ×— JSON ×ž×”Ö¾AI ×•×ž×’×Ÿ ×ž×¤× ×™ ×¤×•×¨×ž×˜×™× ×©×•× ×™×.
 
-### בלוק 6: Heuristics/Fallback
-- `ComputePromptPriority`, `ComputePromptFitScore`, `BuildFallbackRecommendation` ועוד  
-  חישוב fallback כש־AI לא מחזיר תוצאה טובה.
+### ×‘×œ×•×§ 6: Heuristics/Fallback
+- `ComputePromptPriority`, `ComputePromptFitScore`, `BuildFallbackRecommendation` ×•×¢×•×“
+  ×—×™×©×•×‘ fallback ×›×©Ö¾AI ×œ× ×ž×—×–×™×¨ ×ª×•×¦××” ×˜×•×‘×”.
 
-### בלוק 7: Utilities
-- `NormalizeTypeName`, `IsType`, `MergeGarments`, `SplitToTokens` וכו'.  
-  פונקציות עזר ללוגיקה ולניקוי נתונים.
+### ×‘×œ×•×§ 7: Utilities
+- `NormalizeTypeName`, `IsType`, `MergeGarments`, `SplitToTokens` ×•×›×•'.
+  ×¤×•× ×§×¦×™×•×ª ×¢×–×¨ ×œ×œ×•×’×™×§×” ×•×œ× ×™×§×•×™ × ×ª×•× ×™×.
 
 ## `gadifff/Components/Shared/MultiSelectFilter.razor`
-- `IsSelected` – האם ערך נבחר.
-- `ToggleOpen` – פותח/סוגר panel.
-- `ClearSelection` – מאפס בחירה.
-- `RemoveOption` – מסיר צ'יפ מסוים.
-- `ToggleOption` – מסמן/מוריד option מרשימת הנבחרים.
+- `IsSelected` â€“ ×”×× ×¢×¨×š × ×‘×—×¨.
+- `ToggleOpen` â€“ ×¤×•×ª×—/×¡×•×’×¨ panel.
+- `ClearSelection` â€“ ×ž××¤×¡ ×‘×—×™×¨×”.
+- `RemoveOption` â€“ ×ž×¡×™×¨ ×¦'×™×¤ ×ž×¡×•×™×.
+- `ToggleOption` â€“ ×ž×¡×ž×Ÿ/×ž×•×¨×™×“ option ×ž×¨×©×™×ž×ª ×”× ×‘×—×¨×™×.
 
-## `gadifff/Components/Shared/SlotMachineMatch.razor` (קובץ גדול)
-### בלוק UI וסנכרון
-- `OnParametersSetAsync`, `BuildSyncSignature` – מסנכרן מצב לפי פריטים/seed.
-- `RenderSlot` – בניית UI slot (shirt/pants/shoes).
+## `gadifff/Components/Shared/SlotMachineMatch.razor` (×§×•×‘×¥ ×’×“×•×œ)
+### ×‘×œ×•×§ UI ×•×¡× ×›×¨×•×Ÿ
+- `OnParametersSetAsync`, `BuildSyncSignature` â€“ ×ž×¡× ×›×¨×Ÿ ×ž×¦×‘ ×œ×¤×™ ×¤×¨×™×˜×™×/seed.
+- `RenderSlot` â€“ ×‘× ×™×™×ª UI slot (shirt/pants/shoes).
 
-### בלוק בחירת seed ותנועה
+### ×‘×œ×•×§ ×‘×—×™×¨×ª seed ×•×ª× ×•×¢×”
 - `SetSeed`, `SetExclusiveSeed`, `IsSeedSelected`, `SelectedSeedCount`.
-- `Cycle` + `Prev/Next` לכל סוג.
+- `Cycle` + `Prev/Next` ×œ×›×œ ×¡×•×’.
 
-### בלוק הרצה
-- `RunMatch` – מריץ התאמה דרך `MatchingService`.
-- `RunProgressAsync` – אנימציית התקדמות.
+### ×‘×œ×•×§ ×”×¨×¦×”
+- `RunMatch` â€“ ×ž×¨×™×¥ ×”×ª××ž×” ×“×¨×š `MatchingService`.
+- `RunProgressAsync` â€“ ×× ×™×ž×¦×™×™×ª ×”×ª×§×“×ž×•×ª.
 
-### בלוק תוצאות ושמירה
+### ×‘×œ×•×§ ×ª×•×¦××•×ª ×•×©×ž×™×¨×”
 - `ToggleSuggestion`, `IsSuggestionSaveDisabled`, `GetSuggestionSaveButtonText`, `SaveSuggestionAsync`.
 
-### עזר
+### ×¢×–×¨
 - `FindGarment`, `NormalizeTypeName`, `GetImageUrl`, `Mod`.
 
-## דפי Auth קצרים
-- `Login.razor`  
+## ×“×¤×™ Auth ×§×¦×¨×™×
+- `Login.razor`
   `HandleLoginAsync`, `GoToRegister`.
-- `Register.razor`  
+- `Register.razor`
   `HandleRegisterAsync`, `GoToLogin`.
-- `Logout.razor`  
-  `OnInitializedAsync` (logout אוטומטי + redirect).
-- `ForgotPassword.razor`  
+- `Logout.razor`
+  `OnInitializedAsync` (logout ××•×˜×•×ž×˜×™ + redirect).
+- `ForgotPassword.razor`
   `HandleSendAsync`, `GoToLogin`.
-- `ResetPassword.razor`  
+- `ResetPassword.razor`
   `OnParametersSet`, `HandleResetAsync`, `GoToLogin`.
 
-## דפי Admin
-- `AdminClosets.razor`  
-  בלוקים: טעינה, יצירה, עריכה, מחיקה, dirty-check, הודעות UI.  
-  פונקציות: `ReloadUsersAsync`, `CreateUserAsync`, `SaveUserAsync`, `DeleteUserAsync` ועוד.
-- `AdminClosetUser.razor`  
-  בלוקים: טעינת משתמש יעד, מחיקת פריט/אאוטפיט, דיאלוג אישור, ניווט.  
-  פונקציות: `LoadTargetDataAsync`, `DeleteGarmentAsync`, `DeleteOutfitAsync`, `ConfirmDeleteDialogAsync` ועוד.
-- `AdminCloset.razor`, `AdminUsers.razor`  
-  Redirect בלבד.
+## ×“×¤×™ Admin
+- `AdminClosets.razor`
+  ×‘×œ×•×§×™×: ×˜×¢×™× ×”, ×™×¦×™×¨×”, ×¢×¨×™×›×”, ×ž×—×™×§×”, dirty-check, ×”×•×“×¢×•×ª UI.
+  ×¤×•× ×§×¦×™×•×ª: `ReloadUsersAsync`, `CreateUserAsync`, `SaveUserAsync`, `DeleteUserAsync` ×•×¢×•×“.
+- `AdminClosetUser.razor`
+  ×‘×œ×•×§×™×: ×˜×¢×™× ×ª ×ž×©×ª×ž×© ×™×¢×“, ×ž×—×™×§×ª ×¤×¨×™×˜/×××•×˜×¤×™×˜, ×“×™××œ×•×’ ××™×©×•×¨, × ×™×•×•×˜.
+  ×¤×•× ×§×¦×™×•×ª: `LoadTargetDataAsync`, `DeleteGarmentAsync`, `DeleteOutfitAsync`, `ConfirmDeleteDialogAsync` ×•×¢×•×“.
+- `AdminCloset.razor`, `AdminUsers.razor`
+  Redirect ×‘×œ×‘×“.
 
-## דפי עבודה גדולים
-- `Closet.razor`  
-  בלוקים:
-  - טעינת משתמש וקונטקסט אדמין (`ResolveActiveUserContextAsync`)
-  - העלאת קובץ וניתוח (`OnFileChange`, `UploadFromFileAsync`, `PersistGarmentAsync`)
-  - fallback ידני (`PrepareManualFallback`, `SaveManualAsync`)
-  - ניהול סינונים (`BuildGarmentFilterRequest`, `RefreshClosetFiltersAsync`, `On*Changed`, drawer/group methods)
-  - התאמות וחלונות (`OpenMatcher`, `ReloadAfterMatch`, preview methods)
-  - מחיקה (`ConfirmDeleteGarmentDialog`, `DeleteGarmentConfirmedAsync`)
-- `Outfits.razor`  
-  בלוקים:
-  - טעינה + קונטקסט (`LoadData`, `ResolveActiveUserContextAsync`)
-  - סינונים (`BuildRequest`, `RefreshOutfitFiltersAsync`, `On*Changed`, drawer/group methods)
-  - פעולות אאוטפיט (`FindFromOutfit`, `DeleteOutfitConfirmedAsync`, `Reload`)
-  - חלונות עזר (`OpenBestRecommendationWindow`, matcher/preview methods)
-- `Home.razor`  
-  בלוקים:
-  - טעינת dashboard לאדמין (`LoadAdminDashboardAsync`)
-  - בניית נקודות גרף/שימוש (`BuildUsagePoints`)
-  - אינטראקציית hover/select (`SelectUsagePoint`, `HoverUsagePoint`, `ClearUsageHover`)
+## ×“×¤×™ ×¢×‘×•×“×” ×’×“×•×œ×™×
+- `Closet.razor`
+  ×‘×œ×•×§×™×:
+  - ×˜×¢×™× ×ª ×ž×©×ª×ž×© ×•×§×•× ×˜×§×¡×˜ ××“×ž×™×Ÿ (`ResolveActiveUserContextAsync`)
+  - ×”×¢×œ××ª ×§×•×‘×¥ ×•× ×™×ª×•×— (`OnFileChange`, `UploadFromFileAsync`, `PersistGarmentAsync`)
+  - fallback ×™×“× ×™ (`PrepareManualFallback`, `SaveManualAsync`)
+  - × ×™×”×•×œ ×¡×™× ×•× ×™× (`BuildGarmentFilterRequest`, `RefreshClosetFiltersAsync`, `On*Changed`, drawer/group methods)
+  - ×”×ª××ž×•×ª ×•×—×œ×•× ×•×ª (`OpenMatcher`, `ReloadAfterMatch`, preview methods)
+  - ×ž×—×™×§×” (`ConfirmDeleteGarmentDialog`, `DeleteGarmentConfirmedAsync`)
+- `Outfits.razor`
+  ×‘×œ×•×§×™×:
+  - ×˜×¢×™× ×” + ×§×•× ×˜×§×¡×˜ (`LoadData`, `ResolveActiveUserContextAsync`)
+  - ×¡×™× ×•× ×™× (`BuildRequest`, `RefreshOutfitFiltersAsync`, `On*Changed`, drawer/group methods)
+  - ×¤×¢×•×œ×•×ª ×××•×˜×¤×™×˜ (`FindFromOutfit`, `DeleteOutfitConfirmedAsync`, `Reload`)
+  - ×—×œ×•× ×•×ª ×¢×–×¨ (`OpenBestRecommendationWindow`, matcher/preview methods)
+- `Home.razor`
+  ×‘×œ×•×§×™×:
+  - ×˜×¢×™× ×ª dashboard ×œ××“×ž×™×Ÿ (`LoadAdminDashboardAsync`)
+  - ×‘× ×™×™×ª × ×§×•×“×•×ª ×’×¨×£/×©×™×ž×•×© (`BuildUsagePoints`)
+  - ××™× ×˜×¨××§×¦×™×™×ª hover/select (`SelectUsagePoint`, `HoverUsagePoint`, `ClearUsageHover`)
 
 ## `ConsoleApp1` (DB Access)
 ### `DB.cs`
-- constructor: יוצר connection/command reader בסיסיים.
+- constructor: ×™×•×¦×¨ connection/command reader ×‘×¡×™×¡×™×™×.
 
 ### `BaseDB.cs`
-#### בלוק CRUD
+#### ×‘×œ×•×§ CRUD
 - `SelectAllAsync` (3 overloads), `InsertAsync`, `InsertGetObjAsync`, `UpdateAsync`, `DeleteAsync`.
-#### בלוק בניית SQL
+#### ×‘×œ×•×§ ×‘× ×™×™×ª SQL
 - `PrepareWhereQueryWithParameters`, `PrepareUpdateQueryWithParameters`, `PrepareInsertQueryWithParameters`.
-#### בלוק הרצה
-- `ExecNonQueryAsync`, `ExecScalarAsync`, `StringListSelectAllAsync`, `StingListSelectAllAsync` (תאימות לאחור).
-#### בלוק תשתית
+#### ×‘×œ×•×§ ×”×¨×¦×”
+- `ExecNonQueryAsync`, `ExecScalarAsync`, `StringListSelectAllAsync`, `StingListSelectAllAsync` (×ª××™×ž×•×ª ×œ××—×•×¨).
+#### ×‘×œ×•×§ ×ª×©×ª×™×ª
 - `AddParameterToCommand`, `PreQueryAsync`, `PostQueryAsync`.
 
 ### `UserDB.cs`
-- get/create/update/delete/count + `UpdatePasswordHashAsync` לאיפוס סיסמה.
+- get/create/update/delete/count + `UpdatePasswordHashAsync` ×œ××™×¤×•×¡ ×¡×™×¡×ž×”.
 
 ### `StyleDB.cs`
-- קריאה/יצירה של style.
+- ×§×¨×™××”/×™×¦×™×¨×” ×©×œ style.
 
 ### `UserMatchingStateDB.cs`
-- `GetByUserAsync`, `UpsertAsync` למצב התאמה.
+- `GetByUserAsync`, `UpsertAsync` ×œ×ž×¦×‘ ×”×ª××ž×”.
 
 ### `GarmentImageDB.cs`
-- `CreateAsync` לשמירת image bytes.
-- `GetLatestByGarmentIdAsync` לשליפת תמונה להצגה.
+- `CreateAsync` ×œ×©×ž×™×¨×ª image bytes.
+- `GetLatestByGarmentIdAsync` ×œ×©×œ×™×¤×ª ×ª×ž×•× ×” ×œ×”×¦×’×”.
 
-### `GarmentDB.cs` (גדול)
-- בלוק mapping סכמות שונות (`CreateModelAsync` עם fallback לפי מספר עמודות).
-- CRUD בסיסי (`GetByUserAsync`, `GetByIdAsync`, `CreateAsync`, `DeleteGarmentAsync`).
-- בלוק סטטיסטיקות (`CountByUserRoleAsync` וכו').
-- בלוק פילטרים (`GetFilteredByUserAsync`, `GetFilterOptionsAsync` + query helpers).
-- בלוק עזרי parsing/normalization.
+### `GarmentDB.cs` (×’×“×•×œ)
+- ×‘×œ×•×§ mapping ×¡×›×ž×•×ª ×©×•× ×•×ª (`CreateModelAsync` ×¢× fallback ×œ×¤×™ ×ž×¡×¤×¨ ×¢×ž×•×“×•×ª).
+- CRUD ×‘×¡×™×¡×™ (`GetByUserAsync`, `GetByIdAsync`, `CreateAsync`, `DeleteGarmentAsync`).
+- ×‘×œ×•×§ ×¡×˜×˜×™×¡×˜×™×§×•×ª (`CountByUserRoleAsync` ×•×›×•').
+- ×‘×œ×•×§ ×¤×™×œ×˜×¨×™× (`GetFilteredByUserAsync`, `GetFilterOptionsAsync` + query helpers).
+- ×‘×œ×•×§ ×¢×–×¨×™ parsing/normalization.
 
-### `OutfitDB.cs` (גדול)
-- בלוק mapping סכמות legacy/modern (`CreateModelAsync`).
+### `OutfitDB.cs` (×’×“×•×œ)
+- ×‘×œ×•×§ mapping ×¡×›×ž×•×ª legacy/modern (`CreateModelAsync`).
 - CRUD (`GetAllAsync`, `GetByUserAsync`, `GetByIdAsync`, `DeleteOutfitAsync`, `CreateAsync`).
-- בדיקת כפילויות (`ExistsDuplicateAsync`).
-- פילטרים + אפשרויות (`GetFilteredByUserAsync`, `GetFilterOptionsAsync`).
-- תאימות סכמות דינמית (בדיקת columns בזמן ריצה).
+- ×‘×“×™×§×ª ×›×¤×™×œ×•×™×•×ª (`ExistsDuplicateAsync`).
+- ×¤×™×œ×˜×¨×™× + ××¤×©×¨×•×™×•×ª (`GetFilteredByUserAsync`, `GetFilterOptionsAsync`).
+- ×ª××™×ž×•×ª ×¡×›×ž×•×ª ×“×™× ×ž×™×ª (×‘×“×™×§×ª columns ×‘×–×ž×Ÿ ×¨×™×¦×”).
 
 ### `OutfitGarmentDB.cs`
-- כתיבה/קריאה/מחיקה של רשומות קישור פריטים־לאאוטפיט.
-- fallback לסכמות legacy.
+- ×›×ª×™×‘×”/×§×¨×™××”/×ž×—×™×§×” ×©×œ ×¨×©×•×ž×•×ª ×§×™×©×•×¨ ×¤×¨×™×˜×™×Ö¾×œ×××•×˜×¤×™×˜.
+- fallback ×œ×¡×›×ž×•×ª legacy.
 
 ## `ConsoleApp2` (Models)
-### מודלים (ללא לוגיקה כבדה)
+### ×ž×•×“×œ×™× (×œ×œ× ×œ×•×’×™×§×” ×›×‘×“×”)
 - `User`, `Garment`, `Outfit`, `OutfitGarment`, `Style`, `Recommendation`, `UserMatchingState`.
 ### `FilterModels.cs`
-- `Normalize()` לכל request פילטר לניקוי/איחוד ערכים.
+- `Normalize()` ×œ×›×œ request ×¤×™×œ×˜×¨ ×œ× ×™×§×•×™/××™×—×•×“ ×¢×¨×›×™×.
 
 ---
 
-## 5) מה לפשט הלאה בקוד (תכנית קצרה וברורה)
-1. לפרק קבצים גדולים (`Closet`, `Outfits`, `MatchingService`) לתת־שירותים/קומפוננטות.
-2. לבטל `async void` ב־`NavMenu.HandleAuthChanged` ולעבור ל־`Task` בטוח.
-3. להזיז מחרוזות הודעות לקובץ קבועים אחד.
-4. לאחד naming (`role`/`garment_type`/legacy columns) לשכבת map אחת.
-5. להוסיף בדיקות יחידה ל־`AuthService`, `MatchingService`, ו־DB query builders.
+## 5) ×ž×” ×œ×¤×©×˜ ×”×œ××” ×‘×§×•×“ (×ª×›× ×™×ª ×§×¦×¨×” ×•×‘×¨×•×¨×”)
+1. ×œ×¤×¨×§ ×§×‘×¦×™× ×’×“×•×œ×™× (`Closet`, `Outfits`, `MatchingService`) ×œ×ª×ªÖ¾×©×™×¨×•×ª×™×/×§×•×ž×¤×•× × ×˜×•×ª.
+2. ×œ×‘×˜×œ `async void` ×‘Ö¾`NavMenu.HandleAuthChanged` ×•×œ×¢×‘×•×¨ ×œÖ¾`Task` ×‘×˜×•×—.
+3. ×œ×”×–×™×– ×ž×—×¨×•×–×•×ª ×”×•×“×¢×•×ª ×œ×§×•×‘×¥ ×§×‘×•×¢×™× ××—×“.
+4. ×œ××—×“ naming (`role`/`garment_type`/legacy columns) ×œ×©×›×‘×ª map ××—×ª.
+5. ×œ×”×•×¡×™×£ ×‘×“×™×§×•×ª ×™×—×™×“×” ×œÖ¾`AuthService`, `MatchingService`, ×•Ö¾DB query builders.
 
 ---
 
-## 6) הערות חשובות להבנה מיידית
-- קבצי `Program.cs` בתוך `ConsoleApp1/2` הם placeholder ולא משפיעים על זרימת ה־Web.
-- `bootstrap.min.css` הוא vendor: לא מפשטים ידנית.
-- DBL כולל הרבה fallback לסכמות ישנות; זה נראה מורכב אבל נועד לשמור תאימות לנתונים קיימים.
-
+## 6) ×”×¢×¨×•×ª ×—×©×•×‘×•×ª ×œ×”×‘× ×” ×ž×™×™×“×™×ª
+- ×§×‘×¦×™ `Program.cs` ×‘×ª×•×š `ConsoleApp1/2` ×”× placeholder ×•×œ× ×ž×©×¤×™×¢×™× ×¢×œ ×–×¨×™×ž×ª ×”Ö¾Web.
+- `bootstrap.min.css` ×”×•× vendor: ×œ× ×ž×¤×©×˜×™× ×™×“× ×™×ª.
+- DBL ×›×•×œ×œ ×”×¨×‘×” fallback ×œ×¡×›×ž×•×ª ×™×©× ×•×ª; ×–×” × ×¨××” ×ž×•×¨×›×‘ ××‘×œ × ×•×¢×“ ×œ×©×ž×•×¨ ×ª××™×ž×•×ª ×œ× ×ª×•× ×™× ×§×™×™×ž×™×.

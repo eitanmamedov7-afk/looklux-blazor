@@ -1,39 +1,99 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@* מה הקובץ עושה: הקובץ מציג מסך או רכיב בלייזור ומחבר בין התצוגה שעל המסך לבין אזור הקוד. *@
+@* למה הקובץ נדרש: הוא נדרש כדי שהמשתמש יוכל לבצע פעולה או לראות מידע כחלק מהאתר. *@
+@* לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשירותים, למודלים, לניווט ולשכבת הדיבי דרך ההזרקות ואזור הקוד. *@
+@* איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים באזור הקוד שבתחתית הקובץ ובשירותים או במחלקות הדיבי שנקראים ממנו. *@
+
+@*
+*@
+
+
+
+
+
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @page "/closet"
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @rendermode InteractiveServer
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @implements IDisposable
 
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using System.Security.Cryptography
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using System.Text.Json
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using System.Diagnostics
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using Models
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using DBL
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using gadifff.Services
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using Microsoft.AspNetCore.Components.Forms
 
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject IAuthService Auth
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject UserDB UserDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject GarmentDB GarmentDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject GarmentImageDB GarmentImageDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject GarmentFeatureService FeatureSvc
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject NavigationManager Nav
 
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 <PageTitle>My Closet</PageTitle>
 
+
+@* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
 @if (!_loaded)
 {
     <p>Loading...</p>
 }
+
+@* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
 else if (_currentUser is null)
 {
     <div class="alert alert-warning">
         You must login to view your closet.
     </div>
 
+
+    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
     <button class="btn btn-primary" @onclick="@(() => Nav.NavigateTo("/login"))">
         Go to login
     </button>
 }
+
+@* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
 else
 {
     <div class="page-shell">
@@ -42,26 +102,41 @@ else
                 <div class="section-title">My Closet</div>
                 <div class="section-subtitle">Stored garments, auto-tagged and ready for matches.</div>
             </div>
-            <div class="action-group">
-                <button class="btn btn-outline-primary" @onclick="() => OpenMatcher(new List<string>(), false)">
-                    Open matcher
-                </button>
-                <button class="btn btn-outline-secondary" @onclick="OpenBestRecommendations">
-                    Get Best Recommendations
-                </button>
-            </div>
+
+            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
+            @if (!IsReadOnlyAdminView)
+            {
+                <div class="action-group">
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
+                    <button class="btn btn-outline-primary" @onclick="() => OpenMatcher(new List<string>(), false)">
+                        Open matcher
+                    </button>
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
+                    <button class="btn btn-outline-secondary" @onclick="OpenBestRecommendations">
+                        Get Best Recommendations
+                    </button>
+                </div>
+            }
         </div>
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (_isAdminActingOnAnotherUser)
         {
             <div class="alert alert-info d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
                 <div>
-                    Admin mode: managing <strong>@_activeUserDisplayName</strong>
+                    Admin mode: viewing <strong>@_activeUserDisplayName</strong> (read-only)
                 </div>
                 <div class="d-flex gap-2">
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-sm btn-outline-primary" @onclick="OpenActiveUserOutfits">
                         Open outfits
                     </button>
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-sm btn-outline-secondary" @onclick="ExitAdminActingMode">
                         Back to my closet
                     </button>
@@ -69,6 +144,8 @@ else
             </div>
         }
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (!string.IsNullOrWhiteSpace(_recommendationNotice))
         {
             <div class="alert @(_recommendationNoticeIsError ? "alert-warning" : "alert-success")">
@@ -76,6 +153,8 @@ else
             </div>
         }
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (!string.IsNullOrEmpty(_msg))
         {
             <div class="alert @( _isErr ? "alert-danger" : "alert-success")">
@@ -83,40 +162,58 @@ else
             </div>
         }
 
-        @if (_allowManual)
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
+        @if (_allowManual && !IsReadOnlyAdminView)
         {
             <div class="card border-warning">
                 <div class="card-body d-flex flex-column flex-md-row align-items-center gap-3">
                     <div class="fw-bold text-warning">Automatic detection unavailable</div>
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <InputSelect class="form-select manual-type-select" @bind-Value="_manualType">
                         <option value="shirt">Shirt / top</option>
                         <option value="pants">Pants / jeans / shorts</option>
                         <option value="shoes">Shoes / sneakers / boots</option>
                     </InputSelect>
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-warning" @onclick="SaveManualAsync">Save manually</button>
                 </div>
             </div>
         }
 
-        <div class="card">
-            <div class="card-body d-flex flex-column flex-md-row align-items-start gap-3">
-                <div>
-                    <h5 class="card-title mb-1">Upload garment</h5>
-                    <div class="text-muted small">We’ll analyze the image to detect type, color, fit, and more.</div>
-                </div>
-                <div class="ms-md-auto">
-                    <InputFile OnChange="OnFileChange" accept="image/*" class="form-control" />
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
+        @if (!IsReadOnlyAdminView)
+        {
+            <div class="card">
+                <div class="card-body d-flex flex-column flex-md-row align-items-start gap-3">
+                    <div>
+                        <h5 class="card-title mb-1">Upload garment</h5>
+                        <div class="text-muted small">WeÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ll analyze the image to detect type, color, fit, and more.</div>
+                    </div>
+                    <div class="ms-md-auto">
+
+                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
+                        <InputFile OnChange="OnFileChange" accept="image/*" class="form-control" />
+                    </div>
                 </div>
             </div>
-        </div>
+        }
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (ShouldShowClosetFilters)
         {
             <div class="filter-toolbar">
                 <button class="btn btn-sm btn-outline-secondary"
+
                         @onclick="OpenClosetFilterDrawer">
                     Filters (@ClosetFilterSelectionCount)
                 </button>
+
+                @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                 @if (_filtersBusy)
                 {
                     <span class="text-muted small">Updating...</span>
@@ -125,17 +222,25 @@ else
             </div>
         }
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (_items.Count == 0)
         {
             <div class="empty-state">No garments yet. Upload one to see it here.</div>
         }
+
+        @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
         else if (_filteredItems.Count == 0)
         {
             <div class="empty-state">No garments match the current filters.</div>
         }
+
+        @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
         else
         {
             <div class="row row-cols-1 row-cols-md-3 g-3">
+
+                @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                 @foreach (var g in FilteredItems)
                 {
                     <div class="col">
@@ -144,6 +249,7 @@ else
                                  src="@($"/media/garments/by-garment/{g.GarmentId}")"
                                  loading="lazy"
                                  decoding="async"
+
                                  @onclick="() => OpenGarmentPreview(g.GarmentId)"
                                  onerror="this.style.display='none';" />
 
@@ -151,9 +257,13 @@ else
                                 <h6 class="card-title">@g.Type</h6>
                                 <div class="text-muted">@g.Color</div>
                                 <div class="text-muted">@g.Brand</div>
+
+                                @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                                 @if (!string.IsNullOrWhiteSpace(g.FeatureJson))
                                 {
                                     <div class="mt-2">
+
+                                        @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                                         @foreach (var tag in RenderTags(g.FeatureJson))
                                         {
                                             <span class="badge bg-light text-dark border me-1">@tag</span>
@@ -163,14 +273,27 @@ else
                             </div>
 
                             <div class="card-footer d-flex justify-content-between">
-                                <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => OpenMatcher(new List<string>{ g.GarmentId }, true)">
-                                    Find matches
-                                </button>
-                                <button class="btn btn-sm btn-danger"
-                                        @onclick="() => ConfirmDeleteGarmentDialog(g.GarmentId)">
-                                    Delete
-                                </button>
+
+                                @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
+                                @if (!IsReadOnlyAdminView)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary"
+
+                                            @onclick="() => OpenMatcher(new List<string>{ g.GarmentId }, true)">
+                                        Find matches
+                                    </button>
+                                    <button class="btn btn-sm btn-danger"
+
+                                            @onclick="() => ConfirmDeleteGarmentDialog(g.GarmentId)">
+                                        Delete
+                                    </button>
+                                }
+
+                                @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
+                                else
+                                {
+                                    <span class="text-muted small">View only</span>
+                                }
                             </div>
                         </div>
                     </div>
@@ -178,11 +301,14 @@ else
             </div>
         }
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (ShouldShowClosetFilters)
         {
             <div class="filter-drawer-shell @(_showClosetFilterDrawer ? "is-open" : string.Empty)">
                 <button type="button"
                         class="filter-drawer-backdrop"
+
                         @onclick="CloseClosetFilterDrawer"
                         aria-label="Close closet filters">
                 </button>
@@ -191,6 +317,8 @@ else
                        role="dialog"
                        aria-label="Closet filters"
                        aria-modal="true">
+
+                    @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                     @if (_activeClosetFilterGroup == ClosetFilterGroup.None)
                     {
                         <div class="filter-drawer-header filter-drawer-header--summary">
@@ -199,44 +327,63 @@ else
                                 <div class="text-muted small">@ClosetActiveFilterSummary</div>
                             </div>
                             <button class="btn btn-sm btn-outline-secondary"
+
                                     @onclick="CloseClosetFilterDrawer">
                                 Close
                             </button>
                         </div>
 
                         <div class="filter-drawer-groups">
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Category)">
                                 <span>Category</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Category)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Subcategory)">
                                 <span>Subcategory</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Subcategory)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Color)">
                                 <span>Color</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Color)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Season)">
                                 <span>Season</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Season)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Material)">
                                 <span>Material</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Material)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Brand)">
                                 <span>Brand</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Brand)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Fit)">
                                 <span>Fit</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Fit)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Pattern)">
                                 <span>Pattern</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Pattern)</span>
                             </button>
+
+                            @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                             <button type="button" class="filter-group-item" @onclick="() => OpenClosetFilterGroup(ClosetFilterGroup.Tags)">
                                 <span>Tags</span>
                                 <span class="filter-group-meta">@GetClosetGroupSummary(ClosetFilterGroup.Tags)</span>
@@ -245,26 +392,32 @@ else
 
                         <div class="filter-drawer-footer">
                             <button class="btn btn-sm btn-outline-secondary"
+
                                     @onclick="ApplyShoesOnlyFilter"
                                     disabled="@(_selectedCategories.SetEquals(new[] { "shoes" }))">
                                 Only shoes
                             </button>
                             <button class="btn btn-sm btn-outline-secondary"
+
                                     @onclick="ClearAllClosetFilters"
                                     disabled="@(!HasActiveClosetFilters)">
                                 Clear all
                             </button>
                         </div>
                     }
+
+                    @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
                     else
                     {
                         <div class="filter-drawer-header">
                             <button class="btn btn-sm btn-outline-secondary"
+
                                     @onclick="BackToClosetFilterGroups">
                                 Back
                             </button>
                             <div class="fw-bold">@GetClosetFilterGroupTitle(_activeClosetFilterGroup)</div>
                             <button class="btn btn-sm btn-outline-secondary"
+
                                     @onclick="CloseClosetFilterDrawer">
                                 Close
                             </button>
@@ -273,9 +426,12 @@ else
                         <div class="filter-drawer-controls">
                             <input class="form-control form-control-sm"
                                    placeholder="Search options..."
+
                                    @bind="_closetFilterSearch"
+
                                    @bind:event="oninput" />
                             <button class="btn btn-sm btn-outline-secondary"
+
                                     @onclick="ClearActiveClosetGroupAsync">
                                 Clear
                             </button>
@@ -285,12 +441,18 @@ else
                             @{
                                 var options = GetVisibleClosetOptions(_activeClosetFilterGroup).ToList();
                             }
+
+                            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                             @if (options.Count == 0)
                             {
                                 <div class="text-muted small">No options</div>
                             }
+
+                            @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
                             else
                             {
+
+                                @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                                 @foreach (var option in options)
                                 {
                                     var optionValue = option;
@@ -298,6 +460,7 @@ else
                                         <input type="checkbox"
                                                class="form-check-input"
                                                checked="@IsClosetOptionSelected(_activeClosetFilterGroup, optionValue)"
+
                                                @onchange="e => ToggleClosetGroupOption(_activeClosetFilterGroup, optionValue, e)" />
                                         <span class="form-check-label">@optionValue</span>
                                     </label>
@@ -311,8 +474,12 @@ else
     </div>
 }
 
-@if (_showMatcher && _currentUser != null)
+
+@* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
+@if (_showMatcher && _currentUser != null && !IsReadOnlyAdminView)
 {
+
+    @* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
     <SlotMachineMatch UserId="@ActiveUserId"
                       Garments="@(_matcherGarments.Count > 0 ? _matcherGarments : _items)"
                       UserRequest="_matcherRequest"
@@ -323,11 +490,15 @@ else
                       OnMatchComplete="ReloadAfterMatch" />
 }
 
+
+@* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
 @if (!string.IsNullOrWhiteSpace(_previewImageUrl))
 {
     <div class="slot-overlay">
         <div class="slot-panel preview-panel">
             <div class="d-flex justify-content-end mb-2 preview-header">
+
+                @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                 <button class="btn btn-sm btn-outline-secondary" @onclick="CloseGarmentPreview">Close</button>
             </div>
             <img src="@_previewImageUrl"
@@ -337,15 +508,21 @@ else
     </div>
 }
 
-@if (_showBestRecommendationWindow)
+
+@* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
+@if (_showBestRecommendationWindow && !IsReadOnlyAdminView)
 {
     <div class="slot-overlay best-reco-overlay">
         <div class="slot-panel best-reco-modal">
             <div class="d-flex justify-content-between align-items-center mb-2 best-reco-header">
                 <div class="fw-bold best-reco-title">Best Recommendation Filters</div>
+
+                @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                 <button class="btn btn-sm btn-outline-secondary" @onclick="CloseBestRecommendationWindow">Close</button>
             </div>
 
+
+            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
             @if (!string.IsNullOrWhiteSpace(_bestRecommendationWindowError))
             {
                 <div class="alert alert-warning">@_bestRecommendationWindowError</div>
@@ -356,6 +533,7 @@ else
                 <textarea class="form-control"
                           rows="4"
                           placeholder="Example: black sporty outfit for winter evenings"
+
                           @bind="_bestRecommendationRequest"></textarea>
                 <div class="text-muted small best-reco-empty">
                     Leave empty to run default best recommendations from your wardrobe.
@@ -363,22 +541,32 @@ else
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-3 best-reco-actions">
+
+                @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                 <button class="btn btn-sm btn-outline-secondary" @onclick="CloseBestRecommendationWindow">Cancel</button>
+
+                @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                 <button class="btn btn-sm btn-primary" @onclick="ApplyBestRecommendationFiltersAndRunAsync">@ClosetBestRecommendationActionLabel</button>
             </div>
         </div>
     </div>
 }
 
-@if (_showDeleteGarmentDialog)
+
+@* קריאה לשכבת הדיבי כדי לשלוף, לשמור, לעדכן או למחוק מידע ששייך למשתמש. *@
+@if (_showDeleteGarmentDialog && !IsReadOnlyAdminView)
 {
     <div class="slot-overlay">
         <div class="slot-panel confirm-modal">
             <div class="fw-bold">Delete garment</div>
+
+            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
             @if (string.IsNullOrWhiteSpace(_deleteGarmentDialogMessage))
             {
                 <div class="text-muted">This action cannot be undone.</div>
             }
+
+            @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
             else
             {
                 <div class="alert @(_deleteGarmentDialogIsError ? "alert-warning" : "alert-success") mb-0">
@@ -386,18 +574,26 @@ else
                 </div>
             }
             <div class="d-flex justify-content-end gap-2">
+
+                @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                 @if (_deleteGarmentDialogCompleted)
                 {
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-sm btn-outline-secondary" @onclick="CloseDeleteGarmentDialog">Close</button>
                 }
+
+                @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
                 else
                 {
                     <button class="btn btn-sm btn-outline-secondary"
+
                             @onclick="CloseDeleteGarmentDialog"
                             disabled="@_deleteGarmentDialogBusy">
                         Cancel
                     </button>
                     <button class="btn btn-sm btn-danger"
+
                             @onclick="DeleteGarmentConfirmedAsync"
                             disabled="@_deleteGarmentDialogBusy">
                         @(_deleteGarmentDialogBusy ? "Deleting..." : "Delete")
@@ -408,6 +604,8 @@ else
     </div>
 }
 
+
+@* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
 @if (_loading)
 {
     <div class="slot-overlay blocking-loading-overlay">
@@ -415,14 +613,18 @@ else
             <div class="spinner-border text-light blocking-loading-spinner" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="mt-3 fw-bold blocking-loading-title">Analyzing garment…</div>
+            <div class="mt-3 fw-bold blocking-loading-title">Analyzing garmentÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</div>
             <div class="text-muted small blocking-loading-subtitle">@_loadingText</div>
         </div>
     </div>
 }
 
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @code {
     [SupplyParameterFromQuery(Name = "asUserId")]
+    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     public string? AsUserId { get; set; }
 
     private bool _loaded;
@@ -436,14 +638,23 @@ else
     private List<Garment> _filteredItems = new();
 
     private GarmentFilterOptions _filterOptions = new();
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedCategories = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedSubcategories = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedColors = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedSeasons = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedMaterials = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedBrands = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedFits = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedPatterns = new(StringComparer.OrdinalIgnoreCase);
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly HashSet<string> _selectedTags = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _filterCts;
     private bool _filtersBusy;
@@ -479,104 +690,140 @@ else
     private bool _deleteGarmentDialogIsError;
     private bool _deleteGarmentDialogBusy;
     private bool _deleteGarmentDialogCompleted;
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private string ActiveUserId => string.IsNullOrWhiteSpace(_activeUserId)
         ? (_currentUser?.UserId ?? string.Empty)
         : _activeUserId;
+    private bool IsReadOnlyAdminView => _isAdminActingOnAnotherUser;
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     protected override Task OnInitializedAsync()
     {
         _loaded = false;
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return Task.CompletedTask;
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!firstRender) return;
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         _currentUser = await Auth.CurrentUserAsync();
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser != null)
         {
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ResolveActiveUserContextAsync();
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ReloadClosetDataAsync();
         }
 
         _loaded = true;
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await InvokeAsync(StateHasChanged);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     protected override async Task OnParametersSetAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null || !_loaded)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var normalized = NormalizeAsUserId(AsUserId);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.Equals(normalized, _resolvedAsUserId, StringComparison.OrdinalIgnoreCase))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await ResolveActiveUserContextAsync();
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await ReloadClosetDataAsync();
     }
 
 
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async void OnFileChange(InputFileChangeEventArgs e)
     {
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await UploadFromFileAsync(e.File);
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task UploadFromFileAsync(IBrowserFile? file)
     {
         ClearPending();
         _msg = "";
         _isErr = false;
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null || file == null)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         Log($"upload-start user={ActiveUserId} file={file.Name} size={file.Size}");
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (file.Size > 6 * 1024 * 1024)
         {
             _isErr = true;
             _msg = "Image too large (max 6MB).";
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
         }
 
         _loading = true;
-        _loadingText = "Analyzing garment…";
+        _loadingText = "Analyzing garmentÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦";
         StateHasChanged();
 
         byte[]? bytes = null;
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
             using (var ms = new MemoryStream())
             {
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await file.OpenReadStream(maxAllowedSize: 6 * 1024 * 1024).CopyToAsync(ms);
                 bytes = ms.ToArray();
             }
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var sha = Sha256Hex(bytes);
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var featureJson = await FeatureSvc.ExtractFromImageAsync(
                 bytes,
                 file.Name ?? "upload.jpg",
                 file.ContentType ?? "image/jpeg");
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var preview = (featureJson ?? string.Empty);
             Log($"gemini-response len={preview.Length} preview={preview.Substring(0, Math.Min(200, preview.Length))}");
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var parsed = ParseFeatures(featureJson ?? "{}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.IsNullOrWhiteSpace(parsed.Type))
             {
                 PrepareManualFallback(bytes, file, sha, featureJson, "AI could not detect the garment type.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var saved = await PersistGarmentAsync(
                 parsed.Type,
                 parsed.Color,
@@ -597,34 +844,47 @@ else
                 file.ContentType ?? "image/jpeg",
                 file.Name ?? "",
                 sha);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (saved) ClearPending();
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (InvalidOperationException ex)
         {
             _isErr = true;
             _msg = ex.Message;
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (bytes != null)
                 PrepareManualFallback(bytes, file, Sha256Hex(bytes), null, ex.Message);
             Log("upload-error " + ex.Message);
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             _isErr = true;
             _msg = ex.Message;
             Log("upload-error " + ex.Message);
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
             _loading = false;
             _loadingText = string.Empty;
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await InvokeAsync(StateHasChanged);
         }
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void ConfirmDeleteGarmentDialog(string garmentId)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.IsNullOrWhiteSpace(garmentId))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _deleteGarmentId = garmentId;
@@ -635,7 +895,7 @@ else
         _showDeleteGarmentDialog = true;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void CloseDeleteGarmentDialog()
     {
         _showDeleteGarmentDialog = false;
@@ -646,10 +906,17 @@ else
         _deleteGarmentDialogCompleted = false;
     }
 
-    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task DeleteGarmentConfirmedAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null || string.IsNullOrWhiteSpace(_deleteGarmentId) || _deleteGarmentDialogBusy)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _deleteGarmentDialogBusy = true;
@@ -657,41 +924,51 @@ else
         _deleteGarmentDialogIsError = false;
         _deleteGarmentDialogCompleted = false;
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var deleted = await GarmentDb.DeleteGarmentAsync(_deleteGarmentId);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (deleted <= 0)
             {
                 _deleteGarmentDialogIsError = true;
                 _deleteGarmentDialogMessage = "Could not delete this garment.";
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ReloadClosetDataAsync();
             _deleteGarmentDialogMessage = "Garment deleted.";
             _deleteGarmentDialogCompleted = true;
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             _deleteGarmentDialogIsError = true;
             _deleteGarmentDialogMessage = $"Delete failed: {ex.Message}";
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
             _deleteGarmentDialogBusy = false;
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await InvokeAsync(StateHasChanged);
         }
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static string Sha256Hex(byte[] bytes)
     {
+        // ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
         using var sha = SHA256.Create();
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var hash = sha.ComputeHash(bytes);
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
     private async Task<bool> PersistGarmentAsync(
         string type,
         string? color,
@@ -713,9 +990,12 @@ else
         string fileName,
         string sha)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var garmentId = Guid.NewGuid().ToString();
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var imageId = Guid.NewGuid().ToString();
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var g = new Garment
         {
             GarmentId = garmentId,
@@ -739,7 +1019,9 @@ else
             CreatedAt = DateTime.UtcNow
         };
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         var inserted = await GarmentDb.CreateAsync(g);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (inserted <= 0)
         {
             Log("db-insert failed " + (GarmentDb.LastError ?? ""));
@@ -747,11 +1029,13 @@ else
                 ? "Failed to add garment."
                 : $"Failed to add garment: {GarmentDb.LastError}");
         }
+        // מסלול חלופי שפועל כאשר התנאי הקודם לא התקיים.
         else
         {
             Log($"db-insert ok garmentId={garmentId}");
         }
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         var imgOk = await GarmentImageDb.CreateAsync(
             imageId,
             garmentId,
@@ -761,20 +1045,25 @@ else
             imageBytes,
             sha);
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (imgOk <= 0)
         {
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await GarmentDb.DeleteGarmentAsync(garmentId);
             Log("db-image failed, rolled back garment");
             throw new Exception("Failed to save image.");
         }
+        // מסלול חלופי שפועל כאשר התנאי הקודם לא התקיים.
         else
         {
             Log($"db-image ok imageId={imageId}");
         }
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await ReloadClosetDataAsync();
         _msg = "Added!";
         _isErr = false;
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return true;
     }
 
@@ -783,7 +1072,7 @@ else
 
     private IEnumerable<Garment> FilteredItems => _filteredItems;
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void PrepareManualFallback(byte[] bytes, IBrowserFile file, string sha, string? featureJson, string reason)
     {
         _pendingBytes = bytes;
@@ -795,7 +1084,7 @@ else
         _msg = $"{reason} Choose the type below to save manually.";
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void ClearPending()
     {
         _pendingBytes = null;
@@ -806,17 +1095,25 @@ else
         _allowManual = false;
     }
 
-    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task SaveManualAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_pendingBytes == null || _pendingHash == null || _currentUser == null) return;
 
         _loading = true;
-        _loadingText = "Saving manually…";
+        _loadingText = "Saving manuallyÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦";
         StateHasChanged();
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await PersistGarmentAsync(
                 _manualType,
                 color: null,
@@ -840,57 +1137,77 @@ else
 
             ClearPending();
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             _isErr = true;
             _msg = ex.Message;
             Log("manual-save-error " + ex.Message);
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
             _loading = false;
             _loadingText = string.Empty;
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await InvokeAsync(StateHasChanged);
         }
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private IEnumerable<string> RenderTags(string featureJson)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var list = new List<string>();
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var doc = JsonDocument.Parse(featureJson);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (doc.RootElement.TryGetProperty("style_tags", out var tags) && tags.ValueKind == JsonValueKind.Array)
             {
+                // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
                 foreach (var t in tags.EnumerateArray())
                 {
+                    // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
                     var v = t.GetString();
+                    // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                     if (!string.IsNullOrWhiteSpace(v))
                         list.Add(v!);
                 }
             }
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (doc.RootElement.TryGetProperty("color", out var c) && c.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(c.GetString()))
                 list.Add(c.GetString()!);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (doc.RootElement.TryGetProperty("style_category", out var style) && style.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(style.GetString()))
                 list.Add(style.GetString()!);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (doc.RootElement.TryGetProperty("occasion", out var occasion) && occasion.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(occasion.GetString()))
                 list.Add(occasion.GetString()!);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (doc.RootElement.TryGetProperty("fit", out var f) && f.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(f.GetString()))
                 list.Add(f.GetString()!);
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch
         {
-            // ignore parse errors
         }
 
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return list;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenMatcher(List<string> seedIds, bool autoStart)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
         _seedIds = seedIds;
         _autoStart = autoStart;
         _requireSeedSelection = true;
@@ -901,24 +1218,34 @@ else
         _showMatcher = true;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenBestRecommendations()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
         _bestRecommendationWindowError = string.Empty;
         _bestRecommendationRequest = string.Empty;
         _showBestRecommendationWindow = true;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void CloseBestRecommendationWindow()
     {
         _showBestRecommendationWindow = false;
         _bestRecommendationWindowError = string.Empty;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ApplyBestRecommendationFiltersAndRunAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+        if (IsReadOnlyAdminView)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
+            return;
+
         _bestRecommendationWindowError = string.Empty;
         _recommendationNotice = string.Empty;
         _recommendationNoticeIsError = false;
@@ -931,6 +1258,7 @@ else
         _autoStart = true;
         _requireSeedSelection = false;
         _showMatcher = true;
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await InvokeAsync(StateHasChanged);
     }
 
@@ -938,42 +1266,49 @@ else
     {
         get
         {
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return string.IsNullOrWhiteSpace(_bestRecommendationRequest)
                 ? "Start without request"
                 : "Start requested recommendation";
         }
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenGarmentPreview(string garmentId)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.IsNullOrWhiteSpace(garmentId))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _previewImageUrl = $"/media/garments/by-garment/{garmentId}";
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void CloseGarmentPreview()
     {
         _previewImageUrl = null;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private Task CloseMatcher()
     {
         _showMatcher = false;
         _requireSeedSelection = true;
         _matcherGarments = _items.ToList();
         _matcherRequest = string.Empty;
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return Task.CompletedTask;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ReloadAfterMatch()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser != null)
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ReloadClosetDataAsync();
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await InvokeAsync(StateHasChanged);
     }
 
@@ -1006,35 +1341,52 @@ else
     {
         get
         {
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (!HasActiveClosetFilters)
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return "All items";
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var chunks = new List<string>();
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedCategories.Count > 0) chunks.Add($"Category: {string.Join(", ", _selectedCategories)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedSubcategories.Count > 0) chunks.Add($"Subcategory: {string.Join(", ", _selectedSubcategories)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedColors.Count > 0) chunks.Add($"Color: {string.Join(", ", _selectedColors)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedSeasons.Count > 0) chunks.Add($"Season: {string.Join(", ", _selectedSeasons)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedMaterials.Count > 0) chunks.Add($"Material: {string.Join(", ", _selectedMaterials)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedBrands.Count > 0) chunks.Add($"Brand: {string.Join(", ", _selectedBrands)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedFits.Count > 0) chunks.Add($"Fit: {string.Join(", ", _selectedFits)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedPatterns.Count > 0) chunks.Add($"Pattern: {string.Join(", ", _selectedPatterns)}");
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedTags.Count > 0) chunks.Add($"Tags: {string.Join(", ", _selectedTags)}");
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return string.Join(" | ", chunks);
         }
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ReloadClosetDataAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null || string.IsNullOrWhiteSpace(ActiveUserId))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         _items = await GarmentDb.GetByUserAsync(ActiveUserId);
         _matcherGarments = _items.ToList();
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(false);
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private GarmentFilterRequest BuildGarmentFilterRequest() =>
         new()
         {
@@ -1049,34 +1401,47 @@ else
             Tags = _selectedTags.Select(x => x.ToLowerInvariant()).ToList()
         };
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task RefreshClosetFiltersAsync(bool debounce)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null || string.IsNullOrWhiteSpace(ActiveUserId))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _filterCts?.Cancel();
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var cts = new CancellationTokenSource();
         _filterCts = cts;
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (debounce)
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await Task.Delay(180, cts.Token);
 
             _filtersBusy = true;
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await InvokeAsync(StateHasChanged);
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var request = BuildGarmentFilterRequest();
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             _filteredItems = await GarmentDb.GetFilteredByUserAsync(ActiveUserId, request);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (cts.IsCancellationRequested)
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             _filterOptions = await GarmentDb.GetFilterOptionsAsync(ActiveUserId, request);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (cts.IsCancellationRequested)
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
 
-            // Drop selections that no longer exist after dependent filtering updates.
             PruneSelection(_selectedCategories, _filterOptions.Categories);
             PruneSelection(_selectedSubcategories, _filterOptions.Subcategories);
             PruneSelection(_selectedColors, _filterOptions.Colors);
@@ -1087,114 +1452,130 @@ else
             PruneSelection(_selectedPatterns, _filterOptions.Patterns);
             PruneSelection(_selectedTags, _filterOptions.Tags);
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (!ShouldShowClosetFilters)
                 CloseClosetFilterDrawer();
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (TaskCanceledException)
         {
-            // Debounce cancellation.
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (ReferenceEquals(_filterCts, cts))
             {
                 _filterCts = null;
                 _filtersBusy = false;
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await InvokeAsync(StateHasChanged);
             }
         }
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static void PruneSelection(HashSet<string> selected, IReadOnlyCollection<string>? available)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (selected.Count == 0 || available == null || available.Count == 0)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var availableSet = new HashSet<string>(available, StringComparer.OrdinalIgnoreCase);
         selected.RemoveWhere(x => !availableSet.Contains(x));
     }
 
-    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static HashSet<string> NormalizeSelected(HashSet<string> values) =>
         new(values
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.Trim().ToLowerInvariant()),
             StringComparer.OrdinalIgnoreCase);
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnCategoriesChanged(HashSet<string> values)
     {
         _selectedCategories.Clear();
         _selectedCategories.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnSubcategoriesChanged(HashSet<string> values)
     {
         _selectedSubcategories.Clear();
         _selectedSubcategories.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnColorsChanged(HashSet<string> values)
     {
         _selectedColors.Clear();
         _selectedColors.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnSeasonsChanged(HashSet<string> values)
     {
         _selectedSeasons.Clear();
         _selectedSeasons.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnMaterialsChanged(HashSet<string> values)
     {
         _selectedMaterials.Clear();
         _selectedMaterials.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnBrandsChanged(HashSet<string> values)
     {
         _selectedBrands.Clear();
         _selectedBrands.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnFitsChanged(HashSet<string> values)
     {
         _selectedFits.Clear();
         _selectedFits.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnPatternsChanged(HashSet<string> values)
     {
         _selectedPatterns.Clear();
         _selectedPatterns.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task OnTagsChanged(HashSet<string> values)
     {
         _selectedTags.Clear();
         _selectedTags.UnionWith(NormalizeSelected(values));
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ClearAllClosetFilters()
     {
         _selectedCategories.Clear();
@@ -1206,13 +1587,16 @@ else
         _selectedFits.Clear();
         _selectedPatterns.Clear();
         _selectedTags.Clear();
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenClosetFilterDrawer()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!ShouldShowClosetFilters)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _showClosetFilterDrawer = true;
@@ -1220,7 +1604,7 @@ else
         _closetFilterSearch = string.Empty;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void CloseClosetFilterDrawer()
     {
         _showClosetFilterDrawer = false;
@@ -1228,22 +1612,23 @@ else
         _closetFilterSearch = string.Empty;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenClosetFilterGroup(ClosetFilterGroup group)
     {
         _activeClosetFilterGroup = group;
         _closetFilterSearch = string.Empty;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void BackToClosetFilterGroups()
     {
         _activeClosetFilterGroup = ClosetFilterGroup.None;
         _closetFilterSearch = string.Empty;
     }
 
-    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private string GetClosetFilterGroupTitle(ClosetFilterGroup group) =>
+        // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
         group switch
         {
             ClosetFilterGroup.Category => "Category",
@@ -1258,19 +1643,22 @@ else
             _ => "Filters"
         };
 
-    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private string GetClosetGroupSummary(ClosetFilterGroup group)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var count = GetClosetGroupSelectionCount(group);
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return count == 0 ? "All" : $"{count} selected";
     }
 
-    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private int GetClosetGroupSelectionCount(ClosetFilterGroup group) =>
         GetClosetSelectionSet(group)?.Count ?? 0;
 
-    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private HashSet<string>? GetClosetSelectionSet(ClosetFilterGroup group) =>
+        // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
         group switch
         {
             ClosetFilterGroup.Category => _selectedCategories,
@@ -1285,8 +1673,9 @@ else
             _ => null
         };
 
-    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private IReadOnlyCollection<string> GetClosetGroupOptions(ClosetFilterGroup group) =>
+        // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
         group switch
         {
             ClosetFilterGroup.Category => _filterOptions.Categories,
@@ -1301,74 +1690,100 @@ else
             _ => Array.Empty<string>()
         };
 
-    // הסבר: פונקציית שליפה. מחזירה נתונים מה־DB/שירות בהתאם לפרמטרים שנשלחו.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private IEnumerable<string> GetVisibleClosetOptions(ClosetFilterGroup group)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var options = GetClosetGroupOptions(group);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.IsNullOrWhiteSpace(_closetFilterSearch))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return options;
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var search = _closetFilterSearch.Trim();
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return options.Where(x => x.Contains(search, StringComparison.OrdinalIgnoreCase));
     }
 
-    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private bool IsClosetOptionSelected(ClosetFilterGroup group, string option)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var set = GetClosetSelectionSet(group);
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return set != null && set.Contains(option);
     }
 
-    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static bool IsChecked(ChangeEventArgs args) =>
         args.Value is bool b
             ? b
             : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
 
-    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ToggleClosetGroupOption(ClosetFilterGroup group, string option, ChangeEventArgs args)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var set = GetClosetSelectionSet(group);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (set == null)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var normalized = (option ?? string.Empty).Trim().ToLowerInvariant();
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.IsNullOrWhiteSpace(normalized))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (IsChecked(args))
             set.Add(normalized);
+        // מסלול חלופי שפועל כאשר התנאי הקודם לא התקיים.
         else
             set.Remove(normalized);
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ClearActiveClosetGroupAsync()
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var set = GetClosetSelectionSet(_activeClosetFilterGroup);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (set == null)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         set.Clear();
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ApplyShoesOnlyFilter()
     {
         _selectedCategories.Clear();
         _selectedCategories.Add("shoes");
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await RefreshClosetFiltersAsync(true);
     }
 
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private (string Type, string? Color, string? ColorSecondary, string? Pattern, string? StyleCategory, string? Season, string? Occasion, int? FormalityLevel, string? StyleTags, string? Fit, string? Material, string? Sleeve, string? Length, string? Brand) ParseFeatures(string json)
     {
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var doc = JsonDocument.Parse(json ?? "{}");
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var root = doc.RootElement;
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             string type = root.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
             string? color = root.TryGetProperty("color", out var c) ? c.GetString() : null;
             string? colorSecondary = root.TryGetProperty("color_secondary", out var c2) ? c2.GetString() : null;
@@ -1382,77 +1797,105 @@ else
             string? length = root.TryGetProperty("length", out var l) ? l.GetString() : null;
             string? brand = root.TryGetProperty("brand", out var b) ? b.GetString() : null;
             int? formalityLevel = null;
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (root.TryGetProperty("formality_level", out var fl))
             {
+                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (fl.ValueKind == JsonValueKind.Number && fl.TryGetInt32(out var num))
                     formalityLevel = num;
+                // מסלול חלופי שפועל כאשר התנאי הקודם לא התקיים.
                 else if (fl.ValueKind == JsonValueKind.String && int.TryParse(fl.GetString(), out var parsed))
                     formalityLevel = parsed;
             }
 
             string? styleTags = null;
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (root.TryGetProperty("style_tags", out var tags) && tags.ValueKind == JsonValueKind.Array)
             {
+                // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
                 var values = tags.EnumerateArray()
                     .Select(x => x.GetString())
                     .Where(x => !string.IsNullOrWhiteSpace(x))
                     .Select(x => x!.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
+                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (values.Count > 0)
                     styleTags = JsonSerializer.Serialize(values);
             }
 
             type = NormalizeType(type, json ?? string.Empty);
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return (type, color, colorSecondary, pattern, styleCategory, season, occasion, formalityLevel, styleTags, fit, material, sleeve, length, brand);
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch
         {
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return ("", null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
     }
 
-    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static string NormalizeType(string? raw, string fullJson)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var t = (raw ?? string.Empty).Trim().ToLowerInvariant();
         string matchFrom(string source)
         {
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("shirt")) return "shirt";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("t-shirt")) return "shirt";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("tee")) return "shirt";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("pant")) return "pants";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("trouser")) return "pants";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("jean")) return "pants";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("shoe")) return "shoes";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("sneaker")) return "shoes";
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (source.Contains("boot")) return "shoes";
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return "";
         }
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var first = matchFrom(t);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!string.IsNullOrEmpty(first)) return first;
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var second = matchFrom((fullJson ?? string.Empty).ToLowerInvariant());
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!string.IsNullOrEmpty(second)) return second;
 
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return "";
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static void Log(string message)
     {
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try { Debug.WriteLine("[Closet] " + message); } catch { }
     }
 
-    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static string NormalizeAsUserId(string? asUserId) =>
         (asUserId ?? string.Empty).Trim();
 
-    // הסבר: פונקציית resolve. מחליטה מה הערך/המקור הנכון לשימוש לפי סדר עדיפויות ברור.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ResolveActiveUserContextAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _resolvedAsUserId = NormalizeAsUserId(AsUserId);
@@ -1462,15 +1905,20 @@ else
             : _currentUser.FullName;
         _isAdminActingOnAnotherUser = false;
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.IsNullOrWhiteSpace(_resolvedAsUserId) ||
             !string.Equals(_currentUser.Role, "admin", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(_resolvedAsUserId, _currentUser.UserId, StringComparison.OrdinalIgnoreCase))
         {
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
         }
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         var targetUser = await UserDb.GetByIdAsync(_resolvedAsUserId);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (targetUser == null)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _activeUserId = targetUser.UserId;
@@ -1480,31 +1928,34 @@ else
         _isAdminActingOnAnotherUser = true;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenActiveUserOutfits()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_isAdminActingOnAnotherUser && !string.IsNullOrWhiteSpace(ActiveUserId))
         {
             Nav.NavigateTo($"/outfits?asUserId={Uri.EscapeDataString(ActiveUserId)}");
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
         }
 
         Nav.NavigateTo("/outfits");
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void ExitAdminActingMode()
     {
         Nav.NavigateTo("/closet");
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     public void Dispose()
     {
         _filterCts?.Cancel();
         _filterCts?.Dispose();
     }
 
+    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
     private enum ClosetFilterGroup
     {
         None,

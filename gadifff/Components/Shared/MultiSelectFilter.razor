@@ -1,7 +1,9 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
-@using System.Collections.Generic
+﻿@using System.Collections.Generic
 @using System.Linq
 
+@* Role in project:
+   Reusable multi-select control used by closet/recommendation filters.
+   It does not fetch data itself; it only edits selected values and reports changes to parent pages. *@
 <div class="multi-filter @(Disabled ? "is-disabled" : string.Empty)">
     <label class="form-label">@Label</label>
 
@@ -65,39 +67,49 @@
 </div>
 
 @code {
+    // Display label for the filter group (for example: Color, Brand, Season).
     [Parameter] public string Label { get; set; } = string.Empty;
+
+    // All available values for this group, supplied by the parent page.
     [Parameter] public IReadOnlyList<string> Options { get; set; } = Array.Empty<string>();
+
+    // Current selected values; owned by parent and synced via SelectedValuesChanged.
     [Parameter] public HashSet<string> SelectedValues { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // Emits updated selection back to parent (Closet page uses this to rebuild query + refresh results).
     [Parameter] public EventCallback<HashSet<string>> SelectedValuesChanged { get; set; }
+
+    // Caption used when no values are selected.
     [Parameter] public string AllLabel { get; set; } = "All";
+
+    // UI lock state while parent is refreshing filters/results.
     [Parameter] public bool Disabled { get; set; }
 
     private string _search = string.Empty;
     private bool _open;
 
+    // Client-side option filtering inside the popover search input.
     private IEnumerable<string> VisibleOptions =>
         string.IsNullOrWhiteSpace(_search)
             ? Options
             : Options.Where(o => o.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
 
+    // Compact trigger text showing how many values are currently active.
     private string SelectedSummary =>
         SelectedValues.Count == 0 ? AllLabel : $"{SelectedValues.Count} selected";
 
-    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
-    private bool IsSelected(string value) =>
-        SelectedValues.Contains(value);
+    private bool IsSelected(string value) => SelectedValues.Contains(value);
 
-    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
     private void ToggleOpen() => _open = !_open;
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // Clears this filter group and tells parent to rerun filter pipeline.
     private Task ClearSelection()
     {
         _search = string.Empty;
         return SelectedValuesChanged.InvokeAsync(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
     }
 
-    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    // Removes one selected chip and notifies parent to refresh filtered garments.
     private Task RemoveOption(string value)
     {
         var next = new HashSet<string>(SelectedValues, StringComparer.OrdinalIgnoreCase);
@@ -105,7 +117,7 @@
         return SelectedValuesChanged.InvokeAsync(next);
     }
 
-    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
+    // Adds/removes one option from selected set and pushes updated state upward.
     private Task ToggleOption(string optionValue, ChangeEventArgs e)
     {
         var isChecked = e.Value is bool b
@@ -121,3 +133,6 @@
         return SelectedValuesChanged.InvokeAsync(next);
     }
 }
+
+
+

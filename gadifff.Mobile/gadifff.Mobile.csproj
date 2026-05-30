@@ -1,75 +1,141 @@
+<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
+<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
+<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
+<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
+
+
+
+
+
+
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <Project Sdk="Microsoft.NET.Sdk">
 
+
+	<!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
 	<PropertyGroup>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<TargetFrameworks>net9.0-android</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
-		<!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
 
-		<!-- Note for MacCatalyst:
-		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
-		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
-		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
-		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
 
-		<OutputType>Exe</OutputType>
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+
+
+
+
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<OutputType>Exe</OutputType>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<RootNamespace>gadifff.Mobile</RootNamespace>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<UseMaui>true</UseMaui>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SingleProject>true</SingleProject>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<ImplicitUsings>enable</ImplicitUsings>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<Nullable>enable</Nullable>
 
-		<!-- Display name -->
-		<ApplicationTitle>gadifff.Mobile</ApplicationTitle>
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<ApplicationTitle>gadifff.Mobile</ApplicationTitle>
 
-		<!-- App Identifier -->
-		<ApplicationId>com.companyname.gadifff.mobile</ApplicationId>
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<ApplicationId>com.companyname.gadifff.mobile</ApplicationId>
 
-		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
-		<WindowsPackageType>None</WindowsPackageType>
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<WindowsPackageType>None</WindowsPackageType>
 
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' and Exists('$(UserProfile)\AppData\Local\Android\Sdk')">$(UserProfile)\AppData\Local\Android\Sdk</AndroidSdkDirectory>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+		<JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and '$(JAVA_HOME)' != ''">$(JAVA_HOME)</JavaSdkDirectory>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+		<JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and Exists('C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot')">C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot</JavaSdkDirectory>
 	</PropertyGroup>
 
+
+	<!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
 	<ItemGroup>
-		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
-		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
-		<!-- Images -->
-		<MauiImage Include="Resources\Images\*" />
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<MauiImage Include="Resources\Images\*" />
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
-		
-		<!-- Custom Fonts -->
-		<MauiFont Include="Resources\Fonts\*" />
 
-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
-		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<MauiFont Include="Resources\Fonts\*" />
+
+<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
+
+	<!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
 	<ItemGroup>
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 	</ItemGroup>
 
+
+	<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 	<Target Name="EnsureAndroidDevConnectivity"
-	        BeforeTargets="_Upload"
-	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows'))">
+	        BeforeTargets="_GetPrimaryCpuAbi"
+	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows')) and '$(ALLOW_GADIFFF_MOBILE_BUILD)' == '1'">
+
+		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\ensure-mobile-dev-prereqs.ps1&quot;"
 		      IgnoreExitCode="true" />
+	</Target>
+
+	<Target Name="BlockLegacyMobileProject"
+	        BeforeTargets="PrepareForBuild"
+	        Condition="'$(ALLOW_GADIFFF_MOBILE_BUILD)' != '1'">
+		<Error Text="gadifff.Mobile is deprecated. Run the MAUI app from C:\Users\Eitan\source\repos\maui_api instead." />
 	</Target>
 
 </Project>

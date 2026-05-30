@@ -1,5 +1,23 @@
 {
   "profiles": {
+    "Pixel_9_API_35": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "LOOKLUX_ANDROID_AVD": "Pixel_9_API_35"
+      }
+    },
+    "Android Emulator": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "LOOKLUX_ANDROID_AVD": "Pixel_9_API_35"
+      }
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
     "Windows Machine": {
       "commandName": "Project",
       "nativeDebugging": false

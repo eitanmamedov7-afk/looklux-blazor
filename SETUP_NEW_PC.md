@@ -1,3 +1,8 @@
+<!--
+
+
+
+
 # Setup on a New Computer
 
 ## 1. Clone the repository

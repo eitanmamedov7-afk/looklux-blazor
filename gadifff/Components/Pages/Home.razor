@@ -1,26 +1,71 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@* מה הקובץ עושה: הקובץ מציג מסך או רכיב בלייזור ומחבר בין התצוגה שעל המסך לבין אזור הקוד. *@
+@* למה הקובץ נדרש: הוא נדרש כדי שהמשתמש יוכל לבצע פעולה או לראות מידע כחלק מהאתר. *@
+@* לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשירותים, למודלים, לניווט ולשכבת הדיבי דרך ההזרקות ואזור הקוד. *@
+@* איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים באזור הקוד שבתחתית הקובץ ובשירותים או במחלקות הדיבי שנקראים ממנו. *@
+
+@*
+*@
+
+
+
+
+
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @page "/"
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @rendermode InteractiveServer
 
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using System.Globalization
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using DBL
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using gadifff.Services
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using Models
 
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject IAuthService AuthService
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject UserDB UserDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject GarmentDB GarmentDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject OutfitDB OutfitDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject NavigationManager Nav
 
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 <PageTitle>Home</PageTitle>
 
+
+@* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
 @if (!_loaded)
 {
     <div class="home-loading-shell">
         <div class="glass-panel home-loading">Initializing experience...</div>
     </div>
 }
+
+@* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
 else if (IsAdmin)
 {
     <div class="page-shell">
@@ -30,12 +75,16 @@ else if (IsAdmin)
                 <div class="section-subtitle">Admin overview</div>
             </div>
             <div class="action-group">
+
+                @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                 <button class="btn btn-outline-primary" @onclick="@(() => Nav.NavigateTo("/admin/closets"))">
                     Open admin section
                 </button>
             </div>
         </div>
 
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (!string.IsNullOrWhiteSpace(_adminLoadError))
         {
             <div class="alert alert-warning">@_adminLoadError</div>
@@ -87,8 +136,12 @@ else if (IsAdmin)
                         <svg viewBox="0 0 760 250"
                              class="usage-chart-svg"
                              @onmouseleave="ClearUsageHover">
+
+                            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                             @if (_yAxisTicks.Count > 0)
                             {
+
+                                @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                                 @foreach (var tick in _yAxisTicks)
                                 {
                                     <line x1="50" y1="@tick.Y" x2="730" y2="@tick.Y" class="usage-grid-line" />
@@ -98,12 +151,16 @@ else if (IsAdmin)
                             <line x1="50" y1="20" x2="50" y2="200" class="usage-axis-line" />
                             <line x1="50" y1="200" x2="730" y2="200" class="usage-axis-line" />
 
+
+                            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                             @if (_usersChartPoints.Count > 0 && ActiveUsageIndex >= 0 && ActiveUsageIndex < _usersChartPoints.Count)
                             {
                                 var activeX = _usersChartPoints[ActiveUsageIndex].X;
                                 <line x1="@activeX" y1="20" x2="@activeX" y2="200" class="usage-active-line" />
                             }
 
+
+                            @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                             @foreach (var point in _usersChartPoints)
                             {
                                 var width = Math.Max(18d, _chartStepX);
@@ -115,6 +172,8 @@ else if (IsAdmin)
                                       height="180"
                                       class="usage-hit-zone @(point.Index == ActiveUsageIndex ? "is-active" : string.Empty)"
                                       @onmouseover="() => HoverUsagePoint(point.Index)"
+
+                                      @* הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה. *@
                                       @onclick="() => SelectUsagePoint(point.Index)" />
                             }
 
@@ -122,6 +181,8 @@ else if (IsAdmin)
                             <polyline points="@_garmentsLinePoints" class="usage-line garments" />
                             <polyline points="@_outfitsLinePoints" class="usage-line outfits" />
 
+
+                            @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                             @foreach (var point in _usersChartPoints)
                             {
                                 var isActive = point.Index == ActiveUsageIndex;
@@ -130,10 +191,14 @@ else if (IsAdmin)
                                         r="@(isActive ? 5.2 : 3.8)"
                                         class="usage-point users @(isActive ? "is-active" : string.Empty)"
                                         @onmouseover="() => HoverUsagePoint(point.Index)"
+
+                                        @* הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה. *@
                                         @onclick="() => SelectUsagePoint(point.Index)">
                                     <title>@($"{point.Day:yyyy-MM-dd}: users {point.Value}")</title>
                                 </circle>
                             }
+
+                            @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                             @foreach (var point in _garmentsChartPoints)
                             {
                                 var isActive = point.Index == ActiveUsageIndex;
@@ -142,10 +207,14 @@ else if (IsAdmin)
                                         r="@(isActive ? 5.2 : 3.8)"
                                         class="usage-point garments @(isActive ? "is-active" : string.Empty)"
                                         @onmouseover="() => HoverUsagePoint(point.Index)"
+
+                                        @* הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה. *@
                                         @onclick="() => SelectUsagePoint(point.Index)">
                                     <title>@($"{point.Day:yyyy-MM-dd}: garments {point.Value}")</title>
                                 </circle>
                             }
+
+                            @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                             @foreach (var point in _outfitsChartPoints)
                             {
                                 var isActive = point.Index == ActiveUsageIndex;
@@ -154,6 +223,8 @@ else if (IsAdmin)
                                         r="@(isActive ? 5.2 : 3.8)"
                                         class="usage-point outfits @(isActive ? "is-active" : string.Empty)"
                                         @onmouseover="() => HoverUsagePoint(point.Index)"
+
+                                        @* הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה. *@
                                         @onclick="() => SelectUsagePoint(point.Index)">
                                     <title>@($"{point.Day:yyyy-MM-dd}: outfits {point.Value}")</title>
                                 </circle>
@@ -162,6 +233,8 @@ else if (IsAdmin)
                         </svg>
                     </div>
 
+
+                    @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
                     @if (ActiveUsagePoint is { } activePoint)
                     {
                         <div class="usage-chart-details">
@@ -208,6 +281,8 @@ else if (IsAdmin)
                             </tr>
                         </thead>
                         <tbody>
+
+                            @* הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה. *@
                             @foreach (var point in _usage.OrderByDescending(x => x.Day))
                             {
                                 <tr>
@@ -224,6 +299,8 @@ else if (IsAdmin)
         </div>
     </div>
 }
+
+@* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
 else
 {
     <div class="landing-root">
@@ -236,10 +313,16 @@ else
                 <a href="#how">How it works</a>
             </nav>
 
+
+            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
             @if (_currentUser is null)
             {
                 <div class="landing-nav-cta">
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-pill btn-primary" @onclick="@(() => Nav.NavigateTo("/register"))">Get Access</button>
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-pill" @onclick="@(() => Nav.NavigateTo("/login"))">Login</button>
                 </div>
             }
@@ -252,14 +335,22 @@ else
                 Quiet interface, high-signal output. Navigate directly, authenticate fast, and move into your workspace without distraction.
             </p>
 
+
+            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
             @if (_currentUser is null)
             {
                 <div class="landing-cta-row">
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-pill btn-primary" @onclick="@(() => Nav.NavigateTo("/register"))">Get Access</button>
+
+                    @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                     <button class="btn btn-pill" @onclick="@(() => Nav.NavigateTo("/login"))">Login</button>
                 </div>
             }
 
+
+            @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
             @if (_currentUser is not null)
             {
                 <div class="landing-user-chip">
@@ -307,6 +398,9 @@ else
     </div>
 }
 
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @code {
     private bool _loaded;
     private User? _currentUser;
@@ -317,10 +411,15 @@ else
     private int _customerGarmentCount;
     private int _savedOutfitCount;
 
+    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     private const int _chartDays = 14;
+    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     private const double ChartXMin = 50d;
+    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     private const double ChartXMax = 730d;
+    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     private const double ChartYTop = 20d;
+    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     private const double ChartYBottom = 200d;
     private int _chartMaxValue = 1;
     private List<UsagePoint> _usage = new();
@@ -342,10 +441,15 @@ else
     {
         get
         {
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_hoveredUsageIndex >= 0 && _hoveredUsageIndex < _usage.Count)
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return _hoveredUsageIndex;
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (_selectedUsageIndex >= 0 && _selectedUsageIndex < _usage.Count)
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return _selectedUsageIndex;
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return _usage.Count == 0 ? -1 : _usage.Count - 1;
         }
     }
@@ -358,33 +462,47 @@ else
     private bool IsAdmin =>
         _currentUser?.Role?.Equals("admin", StringComparison.OrdinalIgnoreCase) == true;
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!firstRender)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         _currentUser = await AuthService.CurrentUserAsync();
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (IsAdmin)
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await LoadAdminDashboardAsync();
 
         _loaded = true;
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await InvokeAsync(StateHasChanged);
     }
 
-    // הסבר: פונקציית טעינה. טוענת נתונים/קונפיג/משאבים לפני שימוש בשלבים הבאים.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task LoadAdminDashboardAsync()
     {
         _adminLoadError = string.Empty;
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             _customerCount = await UserDb.CountByRoleAsync("customer");
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             _adminCount = await UserDb.CountByRoleAsync("admin");
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             _customerGarmentCount = await GarmentDb.CountByUserRoleAsync("customer");
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             _savedOutfitCount = await OutfitDb.CountByUserRoleAsync("customer");
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var usersByDay = await UserDb.GetDailyCreatedCountsAsync(_chartDays);
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var garmentsByDay = await GarmentDb.GetDailyCreatedCountsByUserRoleAsync(_chartDays, "customer");
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var outfitsByDay = await OutfitDb.GetDailyCreatedCountsByUserRoleAsync(_chartDays, "customer");
 
             BuildUsagePoints(
@@ -392,24 +510,29 @@ else
                 garmentsByDay,
                 outfitsByDay);
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             _adminLoadError = $"Could not load admin statistics: {ex.Message}";
         }
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
     private void BuildUsagePoints(
         Dictionary<DateTime, int> usersByDay,
         Dictionary<DateTime, int> garmentsByDay,
         Dictionary<DateTime, int> outfitsByDay)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var today = DateTime.UtcNow.Date;
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var start = today.AddDays(-(_chartDays - 1));
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var points = new List<UsagePoint>(_chartDays);
 
+        // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
         for (var i = 0; i < _chartDays; i++)
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var day = start.AddDays(i).Date;
             points.Add(new UsagePoint(
                 day,
@@ -431,84 +554,107 @@ else
         _hoveredUsageIndex = -1;
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static List<ChartPoint> BuildChartPoints(
         IReadOnlyList<UsagePoint> points,
         Func<UsagePoint, int> selector,
         int maxValue)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (points.Count == 0)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return new List<ChartPoint>();
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var safeMax = Math.Max(1, maxValue);
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var step = points.Count > 1 ? (ChartXMax - ChartXMin) / (points.Count - 1) : 0d;
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var list = new List<ChartPoint>(points.Count);
+        // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
         for (var i = 0; i < points.Count; i++)
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var value = Math.Clamp(selector(points[i]), 0, int.MaxValue);
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var ratio = value / (double)safeMax;
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var x = ChartXMin + (step * i);
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var y = ChartYBottom - ((ChartYBottom - ChartYTop) * ratio);
             list.Add(new ChartPoint(i, points[i].Day, value, x, y));
         }
 
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return list;
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static string BuildLinePoints(IReadOnlyList<ChartPoint> points)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (points.Count == 0)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return string.Empty;
 
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var culture = CultureInfo.InvariantCulture;
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return string.Join(' ', points.Select(x =>
             $"{x.X.ToString("0.##", culture)},{x.Y.ToString("0.##", culture)}"));
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static List<AxisTick> BuildAxisTicks(int maxValue, int sections)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var safeMax = Math.Max(1, maxValue);
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var safeSections = Math.Max(2, sections);
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var ticks = new List<AxisTick>(safeSections + 1);
+        // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
         for (var i = 0; i <= safeSections; i++)
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var ratio = i / (double)safeSections;
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var y = ChartYBottom - ((ChartYBottom - ChartYTop) * ratio);
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var value = (int)Math.Round(safeMax * ratio);
             ticks.Add(new AxisTick(y, value));
         }
 
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return ticks;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void SelectUsagePoint(int index)
     {
         _selectedUsageIndex = Math.Clamp(index, 0, Math.Max(0, _usage.Count - 1));
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void HoverUsagePoint(int index)
     {
         _hoveredUsageIndex = Math.Clamp(index, 0, Math.Max(0, _usage.Count - 1));
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void ClearUsageHover()
     {
         _hoveredUsageIndex = -1;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת.
     private readonly record struct UsagePoint(
         DateTime Day,
         int UsersCreated,
         int GarmentsAdded,
         int OutfitsSaved);
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת.
     private readonly record struct ChartPoint(
         int Index,
         DateTime Day,
@@ -516,7 +662,7 @@ else
         double X,
         double Y);
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת.
     private readonly record struct AxisTick(
         double Y,
         int Value);

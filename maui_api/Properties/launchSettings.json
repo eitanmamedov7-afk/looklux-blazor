@@ -1,0 +1,32 @@
+{
+    "profiles":  {
+                     "Pixel_9_API_35":  {
+                                            "commandName":  "Project",
+                                            "nativeDebugging":  false,
+                                            "environmentVariables":  {
+                                                                         "LOOKLUX_ANDROID_AVD":  "Pixel_9_API_35",
+                                                                         "LOOKLUX_ENABLE_MOBILE_PREREQS":  "1",
+                                                                         "LOOKLUX_MOBILE_BACKEND_PORT":  "7166",
+                                                                         "LOOKLUX_BACKEND_CSPROJ":  "C:\\Users\\Eitan\\looklux-blazor\\gadifff\\gadifff.csproj"
+                                                                     }
+                                        },
+                     "Android Emulator":  {
+                                              "commandName":  "Project",
+                                              "nativeDebugging":  false,
+                                              "environmentVariables":  {
+                                                                           "LOOKLUX_ANDROID_AVD":  "Pixel_9_API_35",
+                                                                           "LOOKLUX_ENABLE_MOBILE_PREREQS":  "1",
+                                                                           "LOOKLUX_MOBILE_BACKEND_PORT":  "7166",
+                                                                           "LOOKLUX_BACKEND_CSPROJ":  "C:\\Users\\Eitan\\looklux-blazor\\gadifff\\gadifff.csproj"
+                                                                       }
+                                          },
+                     "WSL":  {
+                                 "commandName":  "WSL2",
+                                 "distributionName":  ""
+                             },
+                     "Windows Machine":  {
+                                             "commandName":  "Project",
+                                             "nativeDebugging":  false
+                                         }
+                 }
+}

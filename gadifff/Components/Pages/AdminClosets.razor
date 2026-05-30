@@ -1,19 +1,63 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
+@* מה הקובץ עושה: הקובץ מציג מסך או רכיב בלייזור ומחבר בין התצוגה שעל המסך לבין אזור הקוד. *@
+@* למה הקובץ נדרש: הוא נדרש כדי שהמשתמש יוכל לבצע פעולה או לראות מידע כחלק מהאתר. *@
+@* לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשירותים, למודלים, לניווט ולשכבת הדיבי דרך ההזרקות ואזור הקוד. *@
+@* איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים באזור הקוד שבתחתית הקובץ ובשירותים או במחלקות הדיבי שנקראים ממנו. *@
+
+@*
+*@
+
+
+
+
+
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @page "/admin/closets"
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @rendermode InteractiveServer
 
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using Models
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using DBL
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using gadifff.Services
+
+@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using BCryptNet = BCrypt.Net.BCrypt
 
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject IAuthService Auth
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject UserDB UserDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject GarmentDB GarmentDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject OutfitDB OutfitDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject OutfitGarmentDB OutfitGarmentDb
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @inject NavigationManager Nav
 
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 <PageTitle>Admin Customers</PageTitle>
 
 <div class="page-shell">
@@ -24,21 +68,33 @@
         </div>
     </div>
 
+
+    @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
     @if (!_loaded)
     {
-        <p>Loadingâ€¦</p>
+        <p>LoadingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</p>
     }
+
+    @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
     else if (_mustLogin)
     {
         <div class="alert alert-warning">You must login.</div>
+
+        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
         <button class="btn btn-primary" @onclick="@(() => Nav.NavigateTo("/login"))">Go to login</button>
     }
+
+    @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
     else if (_notAllowed)
     {
         <p class="text-danger">Access denied.</p>
     }
+
+    @* מסלול תצוגת חלופי כשר התנאי הקודם לא התקיים. *@
     else
     {
+
+        @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
         @if (!string.IsNullOrWhiteSpace(_message))
         {
             <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
@@ -49,21 +105,31 @@
                 <div class="fw-bold mb-2">Add account</div>
                 <div class="row g-2">
                     <div class="col-12 col-md-3">
+
+                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                         <input class="form-control form-control-sm" placeholder="Full name" @bind="_createFullName" />
                     </div>
                     <div class="col-12 col-md-3">
+
+                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                         <input class="form-control form-control-sm" placeholder="Email" @bind="_createEmail" />
                     </div>
                     <div class="col-12 col-md-3">
+
+                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                         <input type="password" class="form-control form-control-sm" placeholder="Password" @bind="_createPassword" />
                     </div>
                     <div class="col-12 col-md-2">
+
+                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                         <select class="form-select form-select-sm" @bind="_createRole">
                             <option value="customer">customer</option>
                             <option value="admin">admin</option>
                         </select>
                     </div>
                     <div class="col-12 col-md-1 d-grid">
+
+                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                         <button class="btn btn-sm btn-primary" @onclick="CreateUserAsync" disabled="@_busy">
                             @(_busy ? "..." : "Add")
                         </button>
@@ -89,18 +155,26 @@
                             </tr>
                         </thead>
                         <tbody>
+
+                            @* לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים. *@
                             @foreach (var u in _users)
                             {
                                 var isSelf = string.Equals(u.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase);
                                 var isDirty = IsUserDirty(u);
                                 <tr>
                                     <td>
+
+                                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                                         <input class="form-control form-control-sm" @bind="u.Email" />
                                     </td>
                                     <td>
+
+                                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                                         <input class="form-control form-control-sm" @bind="u.FullName" />
                                     </td>
                                     <td>
+
+                                        @* הגדרת מחלקה שמרכזת נתונים ופעולות שקשורים לאותו תפקיד במערכת. *@
                                         <select class="form-select form-select-sm" @bind="u.Role" disabled="@(isSelf)">
                                             <option value="customer">customer</option>
                                             <option value="admin">admin</option>
@@ -109,15 +183,23 @@
                                     <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-outline-primary me-1"
-                                                @onclick="@(() => Nav.NavigateTo($"/admin/closet/{u.UserId}"))">
+
+                                                @onclick="@(() => Nav.NavigateTo($"/closet?asUserId={Uri.EscapeDataString(u.UserId)}"))">
                                             View Wardrobe
                                         </button>
+                                        <button class="btn btn-sm btn-outline-primary me-1"
+
+                                                @onclick="@(() => Nav.NavigateTo($"/outfits?asUserId={Uri.EscapeDataString(u.UserId)}"))">
+                                            View Recommendations
+                                        </button>
                                         <button class="btn btn-sm me-1 @(isDirty ? "btn-primary" : "btn-outline-secondary")"
+
                                                 @onclick="() => SaveUserAsync(u)"
                                                 disabled="@(_busy || !isDirty)">
                                             Save
                                         </button>
                                         <button class="btn btn-sm btn-danger"
+
                                                 @onclick="() => OpenDeleteUserDialog(u)"
                                                 disabled="@(_busy || isSelf)">
                                             Delete
@@ -133,6 +215,8 @@
     }
 </div>
 
+
+@* קריאה לשכבת הדיבי כדי לשלוף, לשמור, לעדכן או למחוק מידע ששייך למשתמש. *@
 @if (_showDeleteUserDialog && _pendingDeleteUser != null)
 {
     <div class="slot-overlay">
@@ -143,11 +227,13 @@
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn btn-sm btn-outline-secondary"
+
                         @onclick="CloseDeleteUserDialog"
                         disabled="@_busy">
                     Cancel
                 </button>
                 <button class="btn btn-sm btn-danger"
+
                         @onclick="DeleteUserConfirmedAsync"
                         disabled="@_busy">
                     @(_busy ? "Deleting..." : "Delete")
@@ -157,6 +243,9 @@
     </div>
 }
 
+
+
+@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @code {
     private bool _loaded;
     private bool _mustLogin;
@@ -166,6 +255,7 @@
     private string _message = string.Empty;
     private User? _currentUser;
     private List<User> _users = new();
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private readonly Dictionary<string, string> _originalUserSnapshot = new(StringComparer.OrdinalIgnoreCase);
     private bool _showDeleteUserDialog;
     private User? _pendingDeleteUser;
@@ -175,78 +265,101 @@
     private string _createPassword = string.Empty;
     private string _createRole = "customer";
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     protected override async Task OnInitializedAsync()
     {
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         _currentUser = await Auth.CurrentUserAsync();
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_currentUser == null)
         {
             _mustLogin = true;
             _loaded = true;
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
         }
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!string.Equals(_currentUser.Role, "admin", StringComparison.OrdinalIgnoreCase))
         {
             _notAllowed = true;
             _loaded = true;
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
         }
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await ReloadUsersAsync();
         _loaded = true;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task ReloadUsersAsync()
     {
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         _users = (await UserDb.GetAllAsync())
             .OrderByDescending(x => x.CreatedAt)
             .ThenBy(x => x.Email, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         _originalUserSnapshot.Clear();
+        // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
         foreach (var user in _users)
             _originalUserSnapshot[user.UserId] = BuildUserSnapshot(user);
     }
 
-    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task CreateUserAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_busy)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _busy = true;
         ClearMessage();
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var fullName = (_createFullName ?? string.Empty).Trim();
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var email = (_createEmail ?? string.Empty).Trim().ToLowerInvariant();
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var password = _createPassword ?? string.Empty;
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var role = NormalizeRole(_createRole);
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.IsNullOrWhiteSpace(fullName) ||
                 string.IsNullOrWhiteSpace(email) ||
                 string.IsNullOrWhiteSpace(password))
             {
                 SetError("Full name, email, and password are required.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (password.Length < 6)
             {
                 SetError("Password must be at least 6 characters.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var existing = await UserDb.GetByEmailAsync(email);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (existing.Any())
             {
                 SetError("Email already exists.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var user = new User
             {
                 UserId = Guid.NewGuid().ToString(),
@@ -257,10 +370,13 @@
                 CreatedAt = DateTime.UtcNow
             };
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var created = await UserDb.CreateAsync(user);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (created <= 0)
             {
                 SetError("Could not create account.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
@@ -269,69 +385,94 @@
             _createPassword = string.Empty;
             _createRole = "customer";
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ReloadUsersAsync();
             SetSuccess($"Created {role} account.");
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             SetError($"Create failed: {ex.Message}");
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
             _busy = false;
         }
     }
 
-    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task SaveUserAsync(User user)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_busy)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _busy = true;
         ClearMessage();
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var email = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var fullName = (user.FullName ?? string.Empty).Trim();
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var role = NormalizeRole(user.Role);
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var persistedUser = await UserDb.GetByIdAsync(user.UserId);
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (persistedUser == null)
             {
                 SetError("User no longer exists.");
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await ReloadUsersAsync();
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
             {
                 SetError("Email and full name are required.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var duplicate = await UserDb.GetByEmailAsync(email);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (duplicate.Any(x => !string.Equals(x.UserId, user.UserId, StringComparison.OrdinalIgnoreCase)))
             {
                 SetError("Another account already uses that email.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.Equals(user.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase))
             {
                 SetError("You cannot remove your own admin role.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var persistedRole = NormalizeRole(persistedUser.Role);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (persistedRole == "admin" && role != "admin")
             {
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 var adminCount = await UserDb.CountByRoleAsync("admin");
+                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (adminCount <= 1)
                 {
                     SetError("Cannot remove the last admin account.");
+                    // החזרת התוצאה אל הקוד שקרא לפעולה.
                     return;
                 }
             }
@@ -340,166 +481,216 @@
             user.FullName = fullName;
             user.Role = role;
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var updated = await UserDb.UpdateUserAsync(user);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (updated <= 0)
             {
                 SetError("No changes were saved.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ReloadUsersAsync();
             SetSuccess("User updated.");
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             SetError($"Save failed: {ex.Message}");
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
             _busy = false;
         }
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void OpenDeleteUserDialog(User user)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_busy)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
         _pendingDeleteUser = user;
         _showDeleteUserDialog = true;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void CloseDeleteUserDialog()
     {
         _showDeleteUserDialog = false;
         _pendingDeleteUser = null;
     }
 
-    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task DeleteUserConfirmedAsync()
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_pendingDeleteUser == null)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
         await DeleteUserAsync(_pendingDeleteUser);
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!_isError)
             CloseDeleteUserDialog();
     }
 
-    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
     private async Task DeleteUserAsync(User user)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (_busy)
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.Equals(user.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase))
         {
             SetError("You cannot delete your own admin account.");
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return;
         }
 
         _busy = true;
         ClearMessage();
 
+        // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
         try
         {
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var persistedUser = await UserDb.GetByIdAsync(user.UserId);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (persistedUser == null)
             {
                 SetError("User no longer exists.");
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await ReloadUsersAsync();
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var persistedRole = NormalizeRole(persistedUser.Role);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (persistedRole == "admin")
             {
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 var adminCount = await UserDb.CountByRoleAsync("admin");
+                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (adminCount <= 1)
                 {
                     SetError("Cannot delete the last admin account.");
+                    // החזרת התוצאה אל הקוד שקרא לפעולה.
                     return;
                 }
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var outfits = await OutfitDb.GetByUserAsync(persistedUser.UserId, 2000);
+            // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
             foreach (var outfit in outfits)
             {
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await OutfitGarmentDb.DeleteByOutfitIdAsync(outfit.OutfitId);
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await OutfitDb.DeleteOutfitAsync(outfit.OutfitId);
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var garments = await GarmentDb.GetByUserAsync(persistedUser.UserId);
+            // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
             foreach (var garment in garments)
             {
+                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await GarmentDb.DeleteGarmentAsync(garment.GarmentId);
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var deleted = await UserDb.DeleteUserAsync(persistedUser.UserId);
+            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (deleted <= 0)
             {
                 SetError("Could not delete user.");
+                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return;
             }
 
+            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             await ReloadUsersAsync();
             SetSuccess("User and related data deleted.");
         }
+        // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
         catch (Exception ex)
         {
             SetError($"Delete failed: {ex.Message}");
         }
+        // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
         finally
         {
             _busy = false;
         }
     }
 
-    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private bool IsUserDirty(User user)
     {
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (string.IsNullOrWhiteSpace(user.UserId))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return false;
 
+        // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
         if (!_originalUserSnapshot.TryGetValue(user.UserId, out var original))
+            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return false;
 
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return !string.Equals(original, BuildUserSnapshot(user), StringComparison.Ordinal);
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static string BuildUserSnapshot(User user)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var email = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var fullName = (user.FullName ?? string.Empty).Trim();
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var role = NormalizeRole(user.Role);
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return $"{email}|{fullName}|{role}";
     }
 
-    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private static string NormalizeRole(string? role)
     {
+        // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
+        // החזרת התוצאה אל הקוד שקרא לפעולה.
         return normalized == "admin" ? "admin" : "customer";
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void ClearMessage()
     {
         _message = string.Empty;
         _isError = false;
     }
 
-    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void SetSuccess(string message)
     {
         _message = message;
         _isError = false;
     }
 
-    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
     private void SetError(string message)
     {
         _message = message;
