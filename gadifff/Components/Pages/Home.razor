@@ -14,6 +14,7 @@
 
 @* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @page "/"
+@page "/admin"
 
 @* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @rendermode InteractiveServer
@@ -514,6 +515,7 @@ else
         catch (Exception ex)
         {
             _adminLoadError = $"Could not load admin statistics: {ex.Message}";
+            BuildUsagePoints(new(), new(), new());
         }
     }
 
