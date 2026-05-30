@@ -367,12 +367,6 @@ if (-not $backendIsListening -and $autoStartBackend) {
             $portsText = ($processPorts | Sort-Object | ForEach-Object { $_.ToString() }) -join ', '
             Write-Info "Backend process is already running from project output (pid $($projectBackendProcess.Id), ports: $portsText). Skipping publish to avoid file-lock conflicts."
 
-            if (($processPorts -contains 7164) -and -not ($processPorts -contains $backendPort)) {
-                $backendPort = 7164
-                $backendUrl = "http://127.0.0.1:$backendPort"
-                Write-Info "Using detected backend port $backendPort for this run."
-            }
-
             $backendIsListening = Is-PortListening -port $backendPort
         }
     }

@@ -148,7 +148,7 @@ public partial class MainPage : ContentPage
 
         // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
         var current = _currentUri?.ToString() ?? "(not set)";
-        OverlayMessage.Text = $"{message}\nCurrent URL: {current}\n\nAndroid emulator: http://10.0.2.2:7166 (legacy fallback: :7164)\nReal phone: use your PC LAN IP (http://192.168.x.x:7166).\nFor legacy adb reverse setups, http://127.0.0.1:7164 also works.";
+        OverlayMessage.Text = $"{message}\nCurrent URL: {current}\n\nAndroid emulator: http://10.0.2.2:7166\nReal phone: use your PC LAN IP (http://192.168.x.x:7166).\nWith adb reverse, http://127.0.0.1:7166 also works.";
     }
 
     // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
