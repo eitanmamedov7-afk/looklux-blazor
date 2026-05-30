@@ -52,6 +52,7 @@ else {
 }
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 $backendUrl = "http://127.0.0.1:$backendPort"
+$autoStartBackend = $env:LOOKLUX_AUTO_START_BACKEND -eq '1'
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 $preferredAvd = if ([string]::IsNullOrWhiteSpace($env:LOOKLUX_ANDROID_AVD)) { 'Pixel_9_API_35' } else { $env:LOOKLUX_ANDROID_AVD }
 
@@ -100,6 +101,38 @@ function Get-PortListenerProcessId([int]$port) {
     # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
     }
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
+}
+
+# Attempts to find a backend process that is running from the backend project's bin output.
+function Get-BackendProcessFromProjectOutput([string]$projectPath) {
+    $projectDir = Split-Path -Parent $projectPath
+    $outputRoot = [System.IO.Path]::GetFullPath((Join-Path $projectDir 'bin')).TrimEnd('\')
+    $processName = [System.IO.Path]::GetFileNameWithoutExtension($projectPath)
+
+    $processes = Get-Process -Name $processName -ErrorAction SilentlyContinue
+    foreach ($process in $processes) {
+        if ([string]::IsNullOrWhiteSpace($process.Path)) {
+            continue
+        }
+
+        $processPath = [System.IO.Path]::GetFullPath($process.Path)
+        if ($processPath.StartsWith($outputRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            return $process
+        }
+    }
+
+    return $null
+}
+
+# Returns unique listening TCP ports for a process id.
+function Get-ListeningPortsForProcessId([int]$processId) {
+    try {
+        return Get-NetTCPConnection -State Listen -OwningProcess $processId -ErrorAction Stop |
+            Select-Object -ExpandProperty LocalPort -Unique
+    }
+    catch {
+        return @()
+    }
 }
 
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
@@ -314,37 +347,9 @@ function Ensure-AndroidDevice([string]$adbPath, [string]$preferredAvdName) {
     # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
     }
 
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    $emulatorPath = Get-EmulatorPath -adbPath $adbPath
-    # בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
-    if (-not $emulatorPath) {
-        # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-        Write-Info 'emulator.exe not found; cannot start an Android emulator.'
-        # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-        return @()
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    }
-
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    $avdName = Get-AvdName -emulatorPath $emulatorPath -preferredName $preferredAvdName
-    # בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
-    if (-not $avdName) {
-        # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-        Write-Info 'No Android virtual devices found; create one in Android Device Manager.'
-        # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-        return @()
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    }
-
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    Write-Info "Starting Android emulator '$avdName'."
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    Start-Process -FilePath $emulatorPath -ArgumentList @('-avd', $avdName, '-netdelay', 'none', '-netspeed', 'full') | Out-Null
-
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    Write-Info 'Waiting for Android emulator to finish booting.'
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    return Wait-ForAndroidDevice -adbPath $adbPath -timeoutSeconds 180
+    # Do not auto-start an emulator here. VS/device selection should control emulator startup explicitly.
+    Write-Info 'No connected Android device/emulator. Start one from Visual Studio and run again.'
+    return @()
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 }
 
@@ -352,8 +357,29 @@ function Ensure-AndroidDevice([string]$adbPath, [string]$preferredAvdName) {
 Stop-TempMobileBackendProcesses
 Stop-KnownMobileBackendIfListening -port $backendPort
 
+# If backend is running from project output on a different port, avoid publishing over locked files.
+$backendIsListening = Is-PortListening -port $backendPort
+if (-not $backendIsListening -and $autoStartBackend) {
+    $projectBackendProcess = Get-BackendProcessFromProjectOutput -projectPath $backendProject
+    if ($projectBackendProcess) {
+        $processPorts = @(Get-ListeningPortsForProcessId -processId $projectBackendProcess.Id)
+        if ($processPorts.Count -gt 0) {
+            $portsText = ($processPorts | Sort-Object | ForEach-Object { $_.ToString() }) -join ', '
+            Write-Info "Backend process is already running from project output (pid $($projectBackendProcess.Id), ports: $portsText). Skipping publish to avoid file-lock conflicts."
+
+            if (($processPorts -contains 7164) -and -not ($processPorts -contains $backendPort)) {
+                $backendPort = 7164
+                $backendUrl = "http://127.0.0.1:$backendPort"
+                Write-Info "Using detected backend port $backendPort for this run."
+            }
+
+            $backendIsListening = Is-PortListening -port $backendPort
+        }
+    }
+}
+
 # בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
-if (-not (Is-PortListening -port $backendPort)) {
+if (-not $backendIsListening -and $autoStartBackend) {
     # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
     Write-Info "Publishing backend dev copy to $backendRunDir"
     # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
@@ -417,8 +443,14 @@ if (-not (Is-PortListening -port $backendPort)) {
 }
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 else {
-    # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-    Write-Info "Backend already listening on port $backendPort"
+    if ($backendIsListening) {
+        # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
+        Write-Info "Backend already listening on port $backendPort"
+    }
+    else {
+        # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
+        Write-Info "Backend is not listening on port $backendPort and auto-start is disabled. Start gadifff web first."
+    }
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 }
 

@@ -47,11 +47,11 @@
   <!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
   <ItemGroup>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-    <ProjectReference Include="..\ConsoleApp1\DBL.csproj" />
+    <!-- Compile shared data-access sources directly into this project to avoid blocked runtime DLL loading under enterprise code integrity policy. -->
+    <Compile Include="..\ConsoleApp1\*.cs" Link="Shared\ConsoleApp1\%(Filename)%(Extension)" />
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-    <ProjectReference Include="..\ConsoleApp2\Models.csproj" />
+    <!-- Compile shared model sources directly into this project to avoid blocked runtime DLL loading under enterprise code integrity policy. -->
+    <Compile Include="..\ConsoleApp2\*.cs" Link="Shared\ConsoleApp2\%(Filename)%(Extension)" />
   </ItemGroup>
 
 

@@ -130,7 +130,7 @@
 	<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 	<Target Name="EnsureAndroidDevConnectivity"
 	        BeforeTargets="_GetPrimaryCpuAbi"
-	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows')) and '$(LOOKLUX_DISABLE_MOBILE_PREREQS)' != '1'">
+	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows')) and '$(DesignTimeBuild)' != 'true' and '$(LOOKLUX_ENABLE_MOBILE_PREREQS)' == '1' and '$(LOOKLUX_DISABLE_MOBILE_PREREQS)' != '1'">
 
 		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\ensure-mobile-dev-prereqs.ps1&quot;"
@@ -139,7 +139,7 @@
 
 	<Target Name="EnsureAndroidAppStarted"
 	        AfterTargets="Run"
-	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows')) and '$(LOOKLUX_DISABLE_ANDROID_APP_START_CHECK)' != '1'">
+	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows')) and '$(DesignTimeBuild)' != 'true' and '$(LOOKLUX_ENABLE_MOBILE_PREREQS)' == '1' and '$(LOOKLUX_DISABLE_ANDROID_APP_START_CHECK)' != '1'">
 		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\ensure-android-app-started.ps1&quot; -PackageName &quot;com.companyname.maui_api&quot;"
 		      IgnoreExitCode="true" />
 	</Target>
