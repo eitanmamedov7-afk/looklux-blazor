@@ -20,6 +20,7 @@ namespace gadifff.Services
         private readonly ILogger<AuthService> _logger;
 
         private User? _currentUser;
+        private static User? _lastSignedInUser;
         private static readonly TimeSpan PasswordResetTokenLifetime = TimeSpan.FromHours(2);
         public event Action? AuthStateChanged;
 
@@ -55,6 +56,7 @@ namespace gadifff.Services
             }
 
             _currentUser = user;
+            _lastSignedInUser = user;
             NotifyAuthChanged();
             return true;
         }
@@ -62,6 +64,7 @@ namespace gadifff.Services
         public Task LogoutAsync()
         {
             _currentUser = null;
+            _lastSignedInUser = null;
             NotifyAuthChanged();
             return Task.CompletedTask;
         }
@@ -88,6 +91,7 @@ namespace gadifff.Services
                 return false;
 
             _currentUser = user;
+            _lastSignedInUser = user;
             NotifyAuthChanged();
             return true;
         }
@@ -164,6 +168,12 @@ namespace gadifff.Services
         // Used by pages (for example Closet/Outfits) to gate access and resolve user context.
         public Task<User?> CurrentUserAsync()
         {
+            if (_currentUser != null)
+                return Task.FromResult<User?>(_currentUser);
+
+            if (_lastSignedInUser != null)
+                _currentUser = _lastSignedInUser;
+
             return Task.FromResult(_currentUser);
         }
     }
