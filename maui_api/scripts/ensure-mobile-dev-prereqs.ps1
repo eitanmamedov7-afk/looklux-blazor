@@ -51,7 +51,8 @@ else {
     $backendPort = $defaultBackendPort
 }
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-$backendUrl = "http://127.0.0.1:$backendPort"
+$backendUrl = "http://0.0.0.0:$backendPort"
+$backendProbeUrl = "http://127.0.0.1:$backendPort"
 $autoStartBackend = $env:LOOKLUX_AUTO_START_BACKEND -eq '1'
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 $preferredAvd = if ([string]::IsNullOrWhiteSpace($env:LOOKLUX_ANDROID_AVD)) { 'Pixel_9_API_35' } else { $env:LOOKLUX_ANDROID_AVD }
@@ -299,6 +300,45 @@ function Get-AvdName([string]$emulatorPath, [string]$preferredName) {
 }
 
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
+function Get-DeviceSerialFromLine($line) {
+    if ($line -is [string]) {
+        return ($line -split "`t")[0].Trim()
+    }
+
+    return ($line.Line -split "`t")[0].Trim()
+}
+
+function Test-AndroidDeviceReady([string]$adbPath, [string]$serial) {
+    if ([string]::IsNullOrWhiteSpace($serial)) {
+        return $false
+    }
+
+    try {
+        $sysBootCompleted = ((& $adbPath -s $serial shell getprop sys.boot_completed 2>$null) | Out-String).Trim()
+        $devBootCompleted = ((& $adbPath -s $serial shell getprop dev.bootcomplete 2>$null) | Out-String).Trim()
+        $bootAnimation = ((& $adbPath -s $serial shell getprop init.svc.bootanim 2>$null) | Out-String).Trim()
+        $packageManagerOutput = & $adbPath -s $serial shell cmd package list packages android 2>$null
+    }
+    catch {
+        return $false
+    }
+
+    $packageManagerReady = @($packageManagerOutput) |
+        ForEach-Object { $_.ToString().Trim() } |
+        Where-Object { $_ -eq 'package:android' } |
+        Select-Object -First 1
+
+    return $sysBootCompleted -eq '1' -and
+        $devBootCompleted -eq '1' -and
+        $bootAnimation -eq 'stopped' -and
+        -not [string]::IsNullOrWhiteSpace($packageManagerReady)
+}
+
+function Prepare-AndroidDeviceForLaunch([string]$adbPath, [string]$serial) {
+    & $adbPath -s $serial shell input keyevent KEYCODE_WAKEUP 2>$null | Out-Null
+    & $adbPath -s $serial shell wm dismiss-keyguard 2>$null | Out-Null
+}
+
 function Wait-ForAndroidDevice([string]$adbPath, [int]$timeoutSeconds) {
     # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
     $deadline = (Get-Date).AddSeconds($timeoutSeconds)
@@ -306,19 +346,24 @@ function Wait-ForAndroidDevice([string]$adbPath, [int]$timeoutSeconds) {
     while ((Get-Date) -lt $deadline) {
         # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
         $deviceLines = Get-AdbDeviceLines -adbPath $adbPath
+        $readyDeviceLines = @()
+
         # שורת סקריפט שמבצעת צעד בהכנת הסביבה או בהרצת הפרויקט.
         foreach ($line in $deviceLines) {
             # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-            $serial = ($line.Line -split "`t")[0].Trim()
-            # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-            $bootCompleted = (& $adbPath -s $serial shell getprop sys.boot_completed 2>$null).Trim()
+            $serial = Get-DeviceSerialFromLine $line
             # בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
-            if ($bootCompleted -eq '1') {
+            if (Test-AndroidDeviceReady -adbPath $adbPath -serial $serial) {
                 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-                return $deviceLines
+                Prepare-AndroidDeviceForLaunch -adbPath $adbPath -serial $serial
+                $readyDeviceLines += $line
             # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
             }
         # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
+        }
+
+        if ($readyDeviceLines.Count -gt 0) {
+            return $readyDeviceLines
         }
 
         # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
@@ -343,12 +388,39 @@ function Ensure-AndroidDevice([string]$adbPath, [string]$preferredAvdName) {
         # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
         Write-Info 'ADB device already connected.'
         # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
-        return $deviceLines
+        $readyDeviceLines = Wait-ForAndroidDevice -adbPath $adbPath -timeoutSeconds 60
+        if ($readyDeviceLines) {
+            Write-Info 'Connected Android device is ready.'
+            return $readyDeviceLines
+        }
+
+        Write-Info 'Connected Android device did not finish booting within timeout.'
+        return @()
     # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
     }
 
-    # Do not auto-start an emulator here. VS/device selection should control emulator startup explicitly.
-    Write-Info 'No connected Android device/emulator. Start one from Visual Studio and run again.'
+    $emulatorPath = Get-EmulatorPath -adbPath $adbPath
+    if (-not $emulatorPath) {
+        Write-Info 'emulator.exe not found. Start an Android emulator from Visual Studio and run again.'
+        return @()
+    }
+
+    $avdName = Get-AvdName -emulatorPath $emulatorPath -preferredName $preferredAvdName
+    if ([string]::IsNullOrWhiteSpace($avdName)) {
+        Write-Info 'No Android Virtual Device found. Create an emulator in Visual Studio and run again.'
+        return @()
+    }
+
+    Write-Info "Starting Android emulator $avdName."
+    Start-Process -FilePath $emulatorPath -ArgumentList @('-avd', $avdName, '-no-snapshot-load') | Out-Null
+
+    $deviceLines = Wait-ForAndroidDevice -adbPath $adbPath -timeoutSeconds 180
+    if ($deviceLines) {
+        Write-Info "Android emulator $avdName is ready."
+        return $deviceLines
+    }
+
+    Write-Info "Android emulator $avdName did not become ready within timeout."
     return @()
 # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
 }
@@ -398,7 +470,7 @@ if (-not $backendIsListening -and $autoStartBackend) {
         $env:ASPNETCORE_ENVIRONMENT = $previousAspnetcoreEnvironment
 
         # בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
-        if (Wait-ForBackend -url $backendUrl -timeoutSeconds 25) {
+        if (Wait-ForBackend -url $backendProbeUrl -timeoutSeconds 25) {
             # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
             Write-Info 'Backend fallback is reachable.'
         }
@@ -423,7 +495,7 @@ if (-not $backendIsListening -and $autoStartBackend) {
         $env:ASPNETCORE_ENVIRONMENT = $previousAspnetcoreEnvironment
 
         # בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
-        if (Wait-ForBackend -url $backendUrl -timeoutSeconds 25) {
+        if (Wait-ForBackend -url $backendProbeUrl -timeoutSeconds 25) {
             # פקודת סקריפט שמקדמת את הכנת הסביבה או את הרצת הפרויקט.
             Write-Info 'Backend is reachable.'
         }

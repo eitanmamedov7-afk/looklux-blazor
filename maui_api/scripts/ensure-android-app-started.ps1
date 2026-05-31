@@ -49,12 +49,55 @@ function Get-ConnectedDevices([string]$adbPath) {
     return $devices
 }
 
+function Test-AndroidDeviceReady([string]$adbPath, [string]$serial) {
+    try {
+        $sysBootCompleted = ((& $adbPath -s $serial shell getprop sys.boot_completed 2>$null) | Out-String).Trim()
+        $devBootCompleted = ((& $adbPath -s $serial shell getprop dev.bootcomplete 2>$null) | Out-String).Trim()
+        $bootAnimation = ((& $adbPath -s $serial shell getprop init.svc.bootanim 2>$null) | Out-String).Trim()
+        $packageManagerOutput = & $adbPath -s $serial shell cmd package list packages android 2>$null
+    }
+    catch {
+        return $false
+    }
+
+    $packageManagerReady = @($packageManagerOutput) |
+        ForEach-Object { $_.ToString().Trim() } |
+        Where-Object { $_ -eq 'package:android' } |
+        Select-Object -First 1
+
+    return $sysBootCompleted -eq "1" -and
+        $devBootCompleted -eq "1" -and
+        $bootAnimation -eq "stopped" -and
+        -not [string]::IsNullOrWhiteSpace($packageManagerReady)
+}
+
+function Wait-ForAndroidDeviceReady([string]$adbPath, [string]$serial, [int]$timeoutSeconds) {
+    $deadline = (Get-Date).AddSeconds($timeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-AndroidDeviceReady -adbPath $adbPath -serial $serial) {
+            & $adbPath -s $serial shell input keyevent KEYCODE_WAKEUP 2>$null | Out-Null
+            & $adbPath -s $serial shell wm dismiss-keyguard 2>$null | Out-Null
+            return $true
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    return $false
+}
+
 function Is-AppRunning([string]$adbPath, [string]$serial, [string]$packageName) {
-    $appPid = (& $adbPath -s $serial shell pidof $packageName 2>$null).Trim()
+    $pidOutput = & $adbPath -s $serial shell pidof $packageName 2>$null
+    if ($null -eq $pidOutput) {
+        return $false
+    }
+
+    $appPid = ($pidOutput | Out-String).Trim()
     return -not [string]::IsNullOrWhiteSpace($appPid)
 }
 
 function Launch-App([string]$adbPath, [string]$serial, [string]$packageName) {
+    & $adbPath -s $serial shell am force-stop $packageName 2>$null | Out-Null
     & $adbPath -s $serial shell monkey -p $packageName -c android.intent.category.LAUNCHER 1 | Out-Null
     return $LASTEXITCODE -eq 0
 }
@@ -73,11 +116,22 @@ if (-not $devices -or $devices.Count -eq 0) {
 
 foreach ($serial in $devices) {
     if (Is-AppRunning -adbPath $adbPath -serial $serial -packageName $PackageName) {
-        Write-Info "App already running on $serial."
+        Write-Info "Stopping stale $PackageName process on $serial."
+        & $adbPath -s $serial shell am force-stop $PackageName 2>$null | Out-Null
+    }
+
+    if (-not (Wait-ForAndroidDeviceReady -adbPath $adbPath -serial $serial -timeoutSeconds 60)) {
+        Write-Info "Android device $serial is connected but not ready; skipping app launch."
         continue
     }
 
-    Write-Info "App not running on $serial, launching $PackageName."
+    if (Is-AppRunning -adbPath $adbPath -serial $serial -packageName $PackageName) {
+        Write-Info "Restarting $PackageName on $serial."
+    }
+    else {
+        Write-Info "Launching $PackageName on $serial."
+    }
+
     [void](Launch-App -adbPath $adbPath -serial $serial -packageName $PackageName)
 
     $started = $false
