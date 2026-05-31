@@ -15,13 +15,7 @@
 
 <PageTitle>Home</PageTitle>
 
-@if (!_loaded)
-{
-    <div class="home-loading-shell">
-        <div class="glass-panel home-loading">Initializing experience...</div>
-    </div>
-}
-else if (IsAdmin)
+@if (IsAdmin)
 {
     <div class="page-shell">
         <div class="section-header">
@@ -308,7 +302,6 @@ else
 }
 
 @code {
-    private bool _loaded;
     private User? _currentUser;
     private string _adminLoadError = string.Empty;
 
@@ -368,7 +361,6 @@ else
         if (IsAdmin)
             await LoadAdminDashboardAsync();
 
-        _loaded = true;
         await InvokeAsync(StateHasChanged);
     }
 

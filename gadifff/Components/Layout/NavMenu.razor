@@ -66,6 +66,7 @@
     private bool collapseNavMenu = true;
     private User? _currentUser;
     private bool _subscribed;
+    private bool _disposed;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
@@ -89,15 +90,38 @@
             _subscribed = true;
         }
 
-        _currentUser = await AuthService.CurrentUserAsync();
-        await InvokeAsync(StateHasChanged);
+        await RefreshCurrentUserAsync();
     }
 
     // הסבר: פונקציית טיפול באירוע. מקבלת קלט מה־UI, מבצעת בדיקות, ואז מפעילה את הלוגיקה המתאימה.
-    private async void HandleAuthChanged()
+    private void HandleAuthChanged()
     {
-        _currentUser = await AuthService.CurrentUserAsync();
-        await InvokeAsync(StateHasChanged);
+        _ = RefreshCurrentUserAsync();
+    }
+
+    private async Task RefreshCurrentUserAsync()
+    {
+        if (_disposed)
+            return;
+
+        try
+        {
+            var currentUser = await AuthService.CurrentUserAsync();
+            if (_disposed)
+                return;
+
+            await InvokeAsync(() =>
+            {
+                _currentUser = currentUser;
+                StateHasChanged();
+            });
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (InvalidOperationException) when (_disposed)
+        {
+        }
     }
 
     // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
@@ -117,6 +141,8 @@
     // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
     public void Dispose()
     {
+        _disposed = true;
+
         if (_subscribed)
         {
             AuthService.AuthStateChanged -= HandleAuthChanged;

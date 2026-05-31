@@ -584,6 +584,56 @@ textarea {
     background: rgba(255, 255, 255, 0.03);
 }
 
+.admin-user-list {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-user-card .card-body {
+    display: grid;
+    gap: 14px;
+}
+
+.admin-user-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+}
+
+.admin-user-main {
+    min-width: 0;
+}
+
+.admin-user-email {
+    color: #fff;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.admin-user-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    text-align: right;
+}
+
+.admin-edit-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(140px, 0.45fr);
+    gap: 10px;
+    align-items: end;
+}
+
+.admin-user-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .nav-link {
     border-radius: 14px;
     color: var(--muted);
@@ -632,9 +682,24 @@ a.active.nav-link {
 }
 
 #blazor-error-ui {
+    display: none;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10000;
     background: rgba(9, 9, 11, 0.9);
     border-top: 1px solid var(--border-1);
     color: #fff;
+    padding: 0.75rem 1rem;
+}
+
+#blazor-error-ui .reload,
+#blazor-error-ui .dismiss {
+    color: #fff;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-left: 0.75rem;
 }
 
 .content > .row.justify-content-center.mt-4 > [class*="col-"],
@@ -2151,6 +2216,21 @@ a.active.nav-link {
 
     .table td.text-end .btn + .btn {
         margin-top: 6px;
+    }
+
+    .admin-user-row,
+    .admin-edit-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-user-meta,
+    .admin-user-actions {
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .admin-user-actions .btn {
+        flex: 1 1 100%;
     }
 
     input.form-control,

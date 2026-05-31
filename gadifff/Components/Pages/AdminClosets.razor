@@ -75,61 +75,87 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>Email</th>
-                                <th>Full name</th>
-                                <th>Role</th>
-                                <th>Created</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var u in _users)
+        @if (_users.Count == 0)
+        {
+            <div class="empty-state">No customers found.</div>
+        }
+        else
+        {
+            <div class="admin-user-list">
+                @foreach (var u in _users)
+                {
+                    var isSelf = string.Equals(u.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase);
+                    var isEditing = string.Equals(_editingUserId, u.UserId, StringComparison.OrdinalIgnoreCase);
+
+                    <div class="card admin-user-card" @key="u.UserId">
+                        <div class="card-body">
+                            <div class="admin-user-row">
+                                <div class="admin-user-main">
+                                    <div class="admin-user-email">@u.Email</div>
+                                    <div class="text-muted small">@u.FullName</div>
+                                </div>
+                                <div class="admin-user-meta">
+                                    <span class="badge">@NormalizeRole(u.Role)</span>
+                                    <span class="text-muted small">@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                </div>
+                            </div>
+
+                            @if (isEditing)
                             {
-                                var isSelf = string.Equals(u.UserId, _currentUser?.UserId, StringComparison.OrdinalIgnoreCase);
-                                var isDirty = IsUserDirty(u);
-                                <tr>
-                                    <td>
-                                        <input class="form-control form-control-sm" @bind="u.Email" />
-                                    </td>
-                                    <td>
-                                        <input class="form-control form-control-sm" @bind="u.FullName" />
-                                    </td>
-                                    <td>
-                                        <select class="form-select form-select-sm" @bind="u.Role" disabled="@(isSelf)">
+                                <div class="admin-edit-grid">
+                                    <div>
+                                        <label class="form-label">Email</label>
+                                        <input class="form-control form-control-sm" @bind="_editEmail" />
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Full name</label>
+                                        <input class="form-control form-control-sm" @bind="_editFullName" />
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Role</label>
+                                        <select class="form-select form-select-sm" @bind="_editRole" disabled="@(isSelf)">
                                             <option value="customer">customer</option>
                                             <option value="admin">admin</option>
                                         </select>
-                                    </td>
-                                    <td>@u.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary me-1"
-                                                @onclick="@(() => Nav.NavigateTo($"/admin/closet/{u.UserId}"))">
-                                            View Wardrobe
-                                        </button>
-                                        <button class="btn btn-sm me-1 @(isDirty ? "btn-primary" : "btn-outline-secondary")"
-                                                @onclick="() => SaveUserAsync(u)"
-                                                disabled="@(_busy || !isDirty)">
-                                            Save
-                                        </button>
-                                        <button class="btn btn-sm btn-danger"
-                                                @onclick="() => OpenDeleteUserDialog(u)"
-                                                disabled="@(_busy || isSelf)">
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </div>
+                                <div class="admin-user-actions">
+                                    <button class="btn btn-sm btn-primary"
+                                            @onclick="() => SaveEditedUserAsync(u)"
+                                            disabled="@_busy">
+                                        Save
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            @onclick="CancelEdit"
+                                            disabled="@_busy">
+                                        Cancel
+                                    </button>
+                                </div>
                             }
-                        </tbody>
-                    </table>
-                </div>
+                            else
+                            {
+                                <div class="admin-user-actions">
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            @onclick="@(() => Nav.NavigateTo($"/admin/closet/{u.UserId}"))">
+                                        View Wardrobe
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => StartEdit(u)"
+                                            disabled="@_busy">
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-sm btn-danger"
+                                            @onclick="() => OpenDeleteUserDialog(u)"
+                                            disabled="@(_busy || isSelf)">
+                                        Delete
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
-        </div>
+        }
     }
 </div>
 
@@ -174,27 +200,39 @@
     private string _createEmail = string.Empty;
     private string _createPassword = string.Empty;
     private string _createRole = "customer";
+    private string _editingUserId = string.Empty;
+    private string _editEmail = string.Empty;
+    private string _editFullName = string.Empty;
+    private string _editRole = "customer";
 
     // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
     protected override async Task OnInitializedAsync()
     {
-        _currentUser = await Auth.CurrentUserAsync();
-        if (_currentUser == null)
+        try
         {
-            _mustLogin = true;
-            _loaded = true;
-            return;
-        }
+            _currentUser = await Auth.CurrentUserAsync();
+            if (_currentUser == null)
+            {
+                _mustLogin = true;
+                return;
+            }
 
-        if (!string.Equals(_currentUser.Role, "admin", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(_currentUser.Role, "admin", StringComparison.OrdinalIgnoreCase))
+            {
+                _notAllowed = true;
+                return;
+            }
+
+            await ReloadUsersAsync();
+        }
+        catch (Exception ex)
         {
-            _notAllowed = true;
-            _loaded = true;
-            return;
+            SetError($"Could not load customers: {ex.Message}");
         }
-
-        await ReloadUsersAsync();
-        _loaded = true;
+        finally
+        {
+            _loaded = true;
+        }
     }
 
     // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
@@ -208,6 +246,34 @@
         _originalUserSnapshot.Clear();
         foreach (var user in _users)
             _originalUserSnapshot[user.UserId] = BuildUserSnapshot(user);
+    }
+
+    private void StartEdit(User user)
+    {
+        _editingUserId = user.UserId;
+        _editEmail = user.Email ?? string.Empty;
+        _editFullName = user.FullName ?? string.Empty;
+        _editRole = NormalizeRole(user.Role);
+        ClearMessage();
+    }
+
+    private void CancelEdit()
+    {
+        _editingUserId = string.Empty;
+        _editEmail = string.Empty;
+        _editFullName = string.Empty;
+        _editRole = "customer";
+    }
+
+    private async Task SaveEditedUserAsync(User user)
+    {
+        user.Email = _editEmail;
+        user.FullName = _editFullName;
+        user.Role = _editRole;
+
+        await SaveUserAsync(user);
+        if (!_isError)
+            CancelEdit();
     }
 
     // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
