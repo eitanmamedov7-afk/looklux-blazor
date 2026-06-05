@@ -1,28 +1,27 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// מה הקובץ עושה: הקובץ מטפל בגישה למסד הנתונים ובתרגום נתונים לשכבט הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למודלם, לשירותים, לדפי הניהול, לדף הארון ולשירות ההתאמות.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים במודלם שמוחזרים מכאן ובדפים או בשירותים שקוראים לפעוליות הדיבי.
 
 
 
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace DBL
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // Data-access class for garment photos.
+    // This affects the closet upload process and every place in the UI that displays a garment image.
+    // The web project compiles this shared DB layer directly and registers GarmentImageDB in DI.
+    // Closet.razor uses it after a garment upload, and Program.cs uses it to serve image bytes
+    // through /media/garments/by-garment/{garmentId}.
     public class GarmentImageDB : DB
     {
+        // Saves the single uploaded image row during the closet garment-upload process.
+        // The database should enforce one image per garment with a UNIQUE key on garment_id.
+        // If another image already exists for the same garment_id, this insert is expected to fail.
+        // The image is stored as raw bytes in the garment_images table, together with metadata
+        // needed later to serve it correctly: MIME type, original filename, owner user id, and hash.
         public async Task<int> CreateAsync(
             string imageId,
             string garmentId,
@@ -32,6 +31,7 @@ namespace DBL
             byte[] imageBytes,
             string sha256)
         {
+            // Parameterized INSERT keeps the binary data and user-provided file name out of the SQL text.
             const string sql = @"
 INSERT INTO eitan_project12.garment_images
 (image_id, garment_id, user_id, mime_type, file_name, image_bytes, sha256)
@@ -41,6 +41,7 @@ VALUES
             cmd.CommandText = sql;
             cmd.Parameters.Clear();
 
+            // Match each method argument to the real garment_images table columns.
             Add("@image_id", imageId);
             Add("@garment_id", garmentId);
             Add("@user_id", userId);
@@ -49,86 +50,72 @@ VALUES
             Add("@image_bytes", imageBytes);
             Add("@sha256", sha256);
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+            // Open the shared connection only when this operation needs it.
             if (conn.State != System.Data.ConnectionState.Open)
-                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await conn.OpenAsync();
 
-            // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
             try
             {
-                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
+                // Returns the number of inserted rows. The upload flow treats <= 0 as failure.
                 return await cmd.ExecuteNonQueryAsync();
             }
-            // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
             finally
             {
+                // Clear parameters and close the connection so the reused command/connection
+                // starts clean for the next DB operation.
                 cmd.Parameters.Clear();
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (conn.State == System.Data.ConnectionState.Open)
-                    // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                     await conn.CloseAsync();
             }
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
-        public async Task<(byte[] Bytes, string MimeType)?> GetLatestByGarmentIdAsync(string garmentId)
+        // Gets the stored image for a garment when the browser requests the garment image URL.
+        // The UI and media endpoint only need the binary bytes plus MIME type to return an HTTP file.
+        public async Task<(byte[] Bytes, string MimeType)?> GetByGarmentIdAsync(string garmentId)
         {
+            // garment_id is unique in garment_images, so this query should return zero or one row.
             const string sql = @"
 SELECT image_bytes, mime_type
 FROM eitan_project12.garment_images
-WHERE garment_id = @gid
-ORDER BY created_at DESC
-LIMIT 1;";
+WHERE garment_id = @gid;";
 
             cmd.CommandText = sql;
             cmd.Parameters.Clear();
 
+            // The caller gives a garment id, not an image id, because each garment has only one image.
             Add("@gid", garmentId);
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (conn.State != System.Data.ConnectionState.Open)
-                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 await conn.OpenAsync();
 
-            // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
             try
             {
-                // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                 reader = await cmd.ExecuteReaderAsync();
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (!await reader.ReadAsync())
-                    // החזרת התוצאה אל הקוד שקרא לפעולה.
                     return null;
 
-                // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+                // image_bytes is the actual BLOB content; mime_type tells the browser how to display it.
                 var bytes = (byte[])reader["image_bytes"];
-                // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
                 var mime = reader["mime_type"]?.ToString() ?? "application/octet-stream";
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return (bytes, mime);
             }
-            // ניקוי או סגירת משאבים שסרוצים בסוף הפעולה.
             finally
             {
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+                // Readers must be closed before reusing the command/connection for another query.
                 if (reader != null && !reader.IsClosed)
-                    // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                     await reader.CloseAsync();
 
                 cmd.Parameters.Clear();
 
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (conn.State == System.Data.ConnectionState.Open)
-                    // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                     await conn.CloseAsync();
             }
         }
 
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // Small helper for adding command parameters consistently.
+        // Null values are converted to DBNull because database providers do not accept C# null directly.
         private void Add(string name, object value)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var p = cmd.CreateParameter();
             p.ParameterName = name;
             p.Value = value ?? DBNull.Value;

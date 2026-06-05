@@ -1,38 +1,34 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// מה הקובץ עושה: הקובץ מטפל בגישה למסד הנתונים ובתרגום נתונים לשכבט הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למודלם, לשירותים, לדפי הניהול, לדף הארון ולשירות ההתאמות.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים במודלם שמוחזרים מכאן ובדפים או בשירותים שקוראים לפעוליות הדיבי.
 
 
 
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Models;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace DBL
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // Data-access class for application users.
+    // UserDB connects the web/auth/admin pages to the eitan_project12.users table.
+    // It inherits common SELECT/INSERT/UPDATE/DELETE helpers from BaseDB<User>
+    // and only defines user-specific table names, model mapping, queries, and statistics.
     public class UserDB : BaseDB<User>
     {
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // BaseDB uses this column name when it needs to find a row by primary key.
         protected override string GetPrimaryKeyName() => "user_id";
 
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // BaseDB builds generic SQL against this table.
         protected override string GetTableName() => "eitan_project12.users";
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Converts one raw database row into the User model used by the rest of the project.
+        // The column order must match SELECT * from eitan_project12.users:
+        // user_id, email, full_name, role, password_hash, created_at.
         protected override async Task<User> CreateModelAsync(object[] row)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Map each database column into the C# User object.
+            // Empty/default values protect the UI from null database values.
             var u = new User
             {
                 UserId = row[0]?.ToString() ?? "",
@@ -45,53 +41,51 @@ namespace DBL
                     : DateTime.UtcNow
             };
 
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             return await Task.FromResult(u);
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Returns every user account.
+        // Used mainly by admin screens that list/manage customers and admins.
         public async Task<List<User>> GetAllAsync()
         {
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             return await SelectAllAsync();
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Loads one user by id.
+        // Useful when pages receive only a user id and need the full profile/role data.
         public async Task<User?> GetByIdAsync(string userId)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Parameterized SQL fetches the exact account id without string-concatenating input.
             var sql = "SELECT * FROM eitan_project12.users WHERE user_id = @id";
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
+            // BaseDB runs the query and converts rows through CreateModelAsync.
             var list = await SelectAllAsync(sql,
                 new Dictionary<string, object> { { "id", userId } });
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return list.FirstOrDefault();
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Finds users by email.
+        // Auth and registration use this to locate an account and to prevent duplicate emails.
         public async Task<List<User>> GetByEmailAsync(string email)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Email lookup is used during login/register, so it stays parameterized.
             var sql = "SELECT * FROM eitan_project12.users WHERE email = @em";
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             return await SelectAllAsync(sql,
                 new Dictionary<string, object> { { "em", email } });
         }
 
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Convenience wrapper for flows that expect only one account per email.
         public async Task<User?> GetSingleByEmailAsync(string email)
         {
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var list = await GetByEmailAsync(email);
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return list.FirstOrDefault();
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Inserts a new user account.
+        // Registration/admin-create code prepares the User object, including the already-hashed password.
         public async Task<int> CreateAsync(User u)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Field names match the users table columns that will be inserted.
             var fields = new Dictionary<string, object>
             {
                 ["user_id"] = u.UserId,
@@ -102,16 +96,17 @@ namespace DBL
                 ["created_at"] = u.CreatedAt
             };
 
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
+            // BaseDB builds the INSERT statement and executes it.
             return await InsertAsync(fields);
         }
 
 
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Updates account profile fields that admins can edit.
+        // Password changes are kept separate so normal profile edits do not accidentally touch credentials.
         public async Task<int> UpdateUserAsync(User u)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Only editable profile/admin fields are updated here.
             var fields = new Dictionary<string, object>
             {
                 ["email"] = u.Email,
@@ -119,92 +114,89 @@ namespace DBL
                 ["role"] = u.Role
             };
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // WHERE user_id = value; this prevents updating more than one account.
             var parameters = new Dictionary<string, object>
             {
                 ["user_id"] = u.UserId
             };
 
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
+            // BaseDB builds UPDATE users SET ... WHERE user_id = ...
             return await UpdateAsync(fields, parameters);
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Replaces a user's password hash.
+        // Used by password reset/auth flows after the new password has already been hashed.
         public Task<int> UpdatePasswordHashAsync(string userId, string passwordHash)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Store only the hash, never the plain password.
             var fields = new Dictionary<string, object>
             {
                 ["password_hash"] = passwordHash
             };
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Target the one account whose password is being reset/changed.
             var parameters = new Dictionary<string, object>
             {
                 ["user_id"] = userId
             };
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return UpdateAsync(fields, parameters);
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Deletes a user row by id.
+        // Admin deletion code is responsible for deleting related garments/outfits before calling this.
         public Task<int> DeleteUserAsync(string userId)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Delete is scoped to one user id.
             var parameters = new Dictionary<string, object>
             {
                 ["user_id"] = userId
             };
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return DeleteAsync(parameters);
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Counts all users for admin dashboard/statistics.
         public async Task<int> CountAllAsync()
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Dashboard total: one scalar COUNT(*) row.
             var sql = "SELECT COUNT(*) FROM eitan_project12.users";
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var rows = await StingListSelectAllAsync(sql, new Dictionary<string, object>());
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return ParseCount(rows);
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Counts users in one role, for example customer or admin.
+        // Role text is normalized in SQL and C# so casing/spaces do not affect the result.
         public async Task<int> CountByRoleAsync(string role)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Normalize role once before comparing it to normalized database values.
             var normalizedRole = (role ?? string.Empty).Trim().ToLowerInvariant();
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // COALESCE protects the comparison if a role column value is null.
             var sql = @"SELECT COUNT(*)
                         FROM eitan_project12.users
                         WHERE LOWER(TRIM(COALESCE(role,''))) = @role";
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
+            // The role parameter is passed separately from the SQL text.
             var rows = await StingListSelectAllAsync(sql, new Dictionary<string, object>
             {
                 ["role"] = normalizedRole
             });
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return ParseCount(rows);
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Builds a day-by-day user creation count for dashboard charts.
+        // The optional role filter lets the dashboard chart all users or only a specific role.
         public async Task<Dictionary<DateTime, int>> GetDailyCreatedCountsAsync(int days, string? role = null)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Limit chart range to a practical window so bad input cannot request huge reports.
             var safeDays = Math.Clamp(days, 1, 365);
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Use UTC date boundaries to match how created_at values are stored.
             var startUtc = DateTime.UtcNow.Date.AddDays(-(safeDays - 1));
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var endUtcExclusive = DateTime.UtcNow.Date.AddDays(1);
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Optional role filter changes the WHERE clause below.
             var hasRole = !string.IsNullOrWhiteSpace(role);
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var normalizedRole = (role ?? string.Empty).Trim().ToLowerInvariant();
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Choose the SQL shape based on whether the caller requested one role or all users.
             var sql = hasRole
                 ? @"SELECT DATE(created_at) AS day_key, COUNT(*) AS cnt
                     FROM eitan_project12.users
@@ -220,77 +212,68 @@ namespace DBL
                     GROUP BY DATE(created_at)
                     ORDER BY day_key";
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Date range parameters are always needed for this chart query.
             var parameters = new Dictionary<string, object>
             {
                 ["startUtc"] = startUtc,
                 ["endUtcExclusive"] = endUtcExclusive
             };
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+            // Add role only when the SQL includes the @role placeholder.
             if (hasRole)
                 parameters["role"] = normalizedRole;
 
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
+            // Raw grouped rows are parsed into DateTime -> count below.
             var rows = await StingListSelectAllAsync(sql, parameters);
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return ParseDailyCounts(rows);
         }
 
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // Converts a COUNT(*) result row into a safe non-negative int.
+        // MySQL count values may arrive as long/string depending on provider behavior.
         private static int ParseCount(List<object[]> rows)
         {
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+            // No rows means the count query failed or returned nothing.
             if (rows.Count == 0 || rows[0].Length == 0)
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return 0;
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Convert the first column of the first row into an int count.
             var raw = rows[0][0]?.ToString();
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (long.TryParse(raw, out var asLong))
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return (int)Math.Clamp(asLong, 0, int.MaxValue);
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (int.TryParse(raw, out var asInt))
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return Math.Max(0, asInt);
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return 0;
         }
 
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // Converts grouped SQL rows into chart data keyed by date.
+        // Invalid rows are ignored so one malformed value does not break the dashboard.
         private static Dictionary<DateTime, int> ParseDailyCounts(List<object[]> rows)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+            // Result is keyed by day so dashboard code can quickly find a count for each date.
             var result = new Dictionary<DateTime, int>();
-            // לולאה שמבצעת את אותה פעולה עבור כל פריט ברשימה או כל עוד התנאי מתקיים.
             foreach (var row in rows)
             {
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+                // Expected shape is [day_key, cnt].
                 if (row.Length < 2)
                     continue;
 
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
+                // Skip rows whose date cannot be parsed.
                 if (!DateTime.TryParse(row[0]?.ToString(), out var day))
                     continue;
 
-                // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
+                // Count may come back as long/int/string depending on the MySQL provider.
                 var raw = row[1]?.ToString();
-                // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
                 var count = 0;
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (long.TryParse(raw, out var asLong))
                     count = (int)Math.Clamp(asLong, 0, int.MaxValue);
-                // מסלול חלופי שפועל כאשר התנאי הקודם לא התקיים.
                 else if (int.TryParse(raw, out var asInt))
                     count = Math.Max(0, asInt);
 
+                // Store only the date part; chart logic does not need a time-of-day.
                 result[day.Date] = count;
             }
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return result;
         }
 

@@ -56,13 +56,11 @@ Rules:
         private readonly GarmentDB _garmentDb;
         private readonly OutfitDB _outfitDb;
         private readonly OutfitGarmentDB _outfitGarmentDb;
-        private readonly UserMatchingStateDB _stateDb;
         private readonly GeminiClient _gemini;
         private readonly ILogger<MatchingService> _logger;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly IConfiguration _config;
-        private const int DefaultMinPerType = 1;
-        private const int FailureMinPerType = 1;
+        public const int MinPerTypeRequired = 2;
         private const int ScoreThreshold = 70;
         private static readonly Dictionary<string, string> CanonicalTagByAlias = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -119,7 +117,6 @@ Rules:
             GarmentDB garmentDb,
             OutfitDB outfitDb,
             OutfitGarmentDB outfitGarmentDb,
-            UserMatchingStateDB stateDb,
             GeminiClient gemini,
             ILogger<MatchingService> logger,
             IHostEnvironment hostEnvironment,
@@ -128,27 +125,10 @@ Rules:
             _garmentDb = garmentDb;
             _outfitDb = outfitDb;
             _outfitGarmentDb = outfitGarmentDb;
-            _stateDb = stateDb;
             _gemini = gemini;
             _logger = logger;
             _hostEnvironment = hostEnvironment;
             _config = config;
-        }
-        // Loads or initializes per-user matcher state (minimum items required per type, failure/success history).
-        public async Task<UserMatchingState> GetOrInitStateAsync(string userId)
-        {
-            var state = await _stateDb.GetByUserAsync(userId);
-            if (state == null)
-            {
-                state = new UserMatchingState
-                {
-                    UserId = userId,
-                    MinPerType = DefaultMinPerType,
-                    LockedAfterFailure = false
-                };
-                await _stateDb.UpsertAsync(state);
-            }
-            return state;
         }
         // Gate check used before matching:
         // confirms user has enough shirt/pants/shoes items to produce valid outfits.
@@ -156,35 +136,16 @@ Rules:
         {
             var garments = garmentsOverride?.ToList() ?? await _garmentDb.GetByUserAsync(userId);
             var counts = BuildTypeCounts(garments);
-            var state = await GetOrInitStateAsync(userId);
 
             bool HasEnough(string type) =>
-                counts.TryGetValue(type, out var c) && c >= state.MinPerType;
+                counts.TryGetValue(type, out var c) && c >= MinPerTypeRequired;
             var ok = HasEnough("shirt") && HasEnough("pants") && HasEnough("shoes");
             return new MatchingGateResult
             {
                 Allowed = ok,
-                MinPerTypeRequired = state.MinPerType,
+                MinPerTypeRequired = MinPerTypeRequired,
                 Counts = counts
             };
-        }
-        // Updates user matching state after an unsuccessful run.
-        public async Task RecordFailureAsync(string userId)
-        {
-            var state = await GetOrInitStateAsync(userId);
-            state.LockedAfterFailure = true;
-            state.MinPerType = FailureMinPerType;
-            state.LastFailureAt = DateTime.UtcNow;
-            await _stateDb.UpsertAsync(state);
-        }
-        // Updates user matching state after a successful run.
-        public async Task RecordSuccessAsync(string userId)
-        {
-            var state = await GetOrInitStateAsync(userId);
-            state.LockedAfterFailure = false;
-            state.MinPerType = DefaultMinPerType;
-            state.LastSuccessAt = DateTime.UtcNow;
-            await _stateDb.UpsertAsync(state);
         }
 
         // Core recommendation pipeline used by SlotMachineMatch.RunMatch:
@@ -258,7 +219,6 @@ Rules:
             var combinations = BuildCombinations(seed, pools);
             if (combinations.Count == 0)
             {
-                await RecordFailureAsync(userId);
                 return MatchResult.CreateNoMatches("No matches would look good right now. Add more garments and try again.");
             }
             var hasPromptRequest = !string.IsNullOrWhiteSpace(userRequest);
@@ -332,7 +292,6 @@ Rules:
                 .ToList();
             if (!top.Any())
             {
-                await RecordFailureAsync(userId);
                 var fallbackMessage = !string.IsNullOrWhiteSpace(noMatchMessage)
                     ? noMatchMessage
                     : (hasPromptRequest && requestIntent.Tokens.Count > 0
@@ -340,7 +299,6 @@ Rules:
                         : "No matches would look good right now. Add more garments and try again.");
                 return MatchResult.CreateNoMatches(fallbackMessage);
             }
-            await RecordSuccessAsync(userId);
             return MatchResult.CreateSuccess(top);
         }
 
