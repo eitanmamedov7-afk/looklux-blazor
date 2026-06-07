@@ -1,10 +1,10 @@
 
 // SEARCH INDEX
-// MODEL, OUTFIT, RECOMMENDATION, MATCH, SAVE, SCORE, FILTER, GARMENT
+// MODEL, OUTFIT, RECOMMENDATION, MATCH, SAVE, SCORE, FILTER, GARMENT, OUTFIT_WEAR_LOG
 //
 // Topic: OUTFIT MODEL
 // Purpose: Represents one saved recommendation/outfit result.
-// Search keywords: MODEL OUTFIT RECOMMENDATION MATCH SAVE SCORE FILTER GARMENT
+// Search keywords: MODEL OUTFIT RECOMMENDATION MATCH SAVE SCORE FILTER GARMENT OUTFIT_WEAR_LOG
 // When to use it: Show this when explaining saved outfits and recommendation results.
 // Important notes: Shirt/Pants/Shoes ids point to garments; outfit_garments also stores relation rows.
 
@@ -45,5 +45,16 @@ namespace Models
         public string? RequestedGarmentIds { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        // Topic: Outfit wear summary fields
+        // Purpose: Carries how many times this saved outfit was worn and the first/last worn timestamps.
+        // Search keywords: MODEL OUTFIT_WEAR_LOG OUTFIT HISTORY COUNT TIMESTAMP
+        // When to use it: Use when rendering outfit cards in the web page or MAUI app.
+        // Important notes: These values come from outfit_wear_logs and are not stored in the outfits table.
+        // FLOW_OUTFIT_WEAR_STATS_04: Outfit model carries wear count, first worn, and last worn to UI/API cards.
+        // This file is involved because web and MAUI both display Outfit objects; next step is card rendering.
+        public int WearCount { get; set; }
+        public DateTime? FirstWornAt { get; set; }
+        public DateTime? LastWornAt { get; set; }
     }
 }

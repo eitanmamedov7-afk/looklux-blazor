@@ -1,12 +1,13 @@
 // SEARCH INDEX
-// MAUI, MOBILE, API, LOGIN, REGISTER, PASSWORD, CLOSET, GARMENT, UPLOAD, MATCH, OUTFIT, ADMIN, DELETE, LIST
+// MAUI, MOBILE, API, LOGIN, REGISTER, PASSWORD, CLOSET, GARMENT, UPLOAD, MATCH, OUTFIT, ADMIN, DELETE, LIST, OUTFIT_WEAR_LOG
 //
 // Topic: MAUI MAIN PAGE CODE-BEHIND
 // Purpose: Handles mobile UI events and calls LookLuxApiClient for all backend work.
-// Search keywords: MAUI MOBILE API LOGIN REGISTER PASSWORD CLOSET GARMENT UPLOAD MATCH OUTFIT ADMIN DELETE LIST
+// Search keywords: MAUI MOBILE API LOGIN REGISTER PASSWORD CLOSET GARMENT UPLOAD MATCH OUTFIT ADMIN DELETE LIST OUTFIT_WEAR_LOG
 // When to use it: Show this when explaining how the MAUI app uses the Blazor backend through API calls.
 // Important notes: This file should not access SQL directly; it uses LookLuxApiClient.
 
+using System.Net.Mail;
 using Models;
 
 namespace gadifff.Mobile;
@@ -20,6 +21,13 @@ public partial class MainPage : ContentPage
     // When to use it: Show this when explaining how mobile screens switch without separate pages.
     // Important notes: _activeDataUserId is used when admin views a customer.
     private LookLuxApiClient? _api;
+    // Topic: Mobile signed-in user state
+    // Purpose: Keeps the logged-in MAUI user after the login/register API returns a user DTO.
+    // Search keywords: MAUI LOGIN AUTH SESSION USER API
+    // When to use it: Show this when explaining where MAUI remembers who is signed in.
+    // Important notes: This is app memory state, not a browser cookie. Closing/restarting the app requires login again.
+    // FLOW_AUTH_STATE_MOBILE_01: MainPage stores the current signed-in mobile user in _currentUser.
+    // This file is involved because every MAUI feature checks _currentUser before calling protected API endpoints.
     private MobileUserDto? _currentUser;
     private string? _activeDataUserId;
     private string? _activeDataUserLabel;
@@ -74,7 +82,16 @@ public partial class MainPage : ContentPage
     {
         await RunSafeAsync(async () =>
         {
-            var result = await RequireApi().LoginAsync(EmailEntry.Text ?? "", PasswordEntry.Text ?? "");
+            var email = (EmailEntry.Text ?? string.Empty).Trim();
+            var password = PasswordEntry.Text ?? string.Empty;
+            // VALIDATION_EMAIL / VALIDATION_PASSWORD: MAUI login checks email shape and password presence before API call.
+            if (!IsValidEmail(email) || string.IsNullOrWhiteSpace(password))
+            {
+                ShowMessage("Enter a valid email and password.", true);
+                return;
+            }
+
+            var result = await RequireApi().LoginAsync(email, password);
             if (result?.Success != true || result.User == null)
             {
                 ShowMessage(result?.Message ?? "Invalid email or password.", true);
@@ -98,6 +115,21 @@ public partial class MainPage : ContentPage
         {
             var password = RegisterPasswordEntry.Text ?? "";
             var confirmPassword = RegisterConfirmPasswordEntry.Text ?? "";
+            var email = (RegisterEmailEntry.Text ?? string.Empty).Trim();
+            // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_PASSWORD: MAUI registration validates all user-entered fields before API call.
+            if (!FullNameRules.TryNormalize(RegisterNameEntry.Text, out var fullName))
+            {
+                ShowMessage(FullNameRules.ValidationMessage, true);
+                return;
+            }
+
+            if (!IsValidEmail(email) || !IsValidPassword(password))
+            {
+                ShowMessage("Enter a valid email and password of 6-128 characters.", true);
+                return;
+            }
+
+            // VALIDATION_PASSWORD_CONFIRM: MAUI registration requires the repeated password to match.
             if (!string.Equals(password, confirmPassword, StringComparison.Ordinal))
             {
                 ShowMessage("Passwords do not match.", true);
@@ -105,8 +137,8 @@ public partial class MainPage : ContentPage
             }
 
             var result = await RequireApi().RegisterAsync(
-                RegisterNameEntry.Text ?? "",
-                RegisterEmailEntry.Text ?? "",
+                fullName,
+                email,
                 password);
 
             if (result?.Success != true || result.User == null)
@@ -131,9 +163,10 @@ public partial class MainPage : ContentPage
         await RunSafeAsync(async () =>
         {
             var email = (EmailEntry.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(email))
+            // VALIDATION_EMAIL: MAUI forgot-password validates the email field before asking the API to send mail.
+            if (!IsValidEmail(email))
             {
-                ShowMessage("Enter your email first.", true);
+                ShowMessage("Enter a valid email first.", true);
                 return;
             }
 
@@ -142,6 +175,13 @@ public partial class MainPage : ContentPage
         });
     }
 
+    // Topic: Mobile enter signed-in state
+    // Purpose: Saves the API user DTO, shows the app panels, and loads user-specific data.
+    // Search keywords: MAUI LOGIN AUTH SESSION USER API
+    // When to use it: Use after successful login or registration in MAUI.
+    // Important notes: The backend validates credentials; this method only stores the returned user in the app.
+    // FLOW_AUTH_STATE_MOBILE_02: SignInAsync writes _currentUser and switches from auth UI to app UI.
+    // This file is involved because this is the exact point MAUI becomes signed in; next step is LoadAllAsync.
     private async Task SignInAsync(MobileUserDto user)
     {
         _currentUser = user;
@@ -196,6 +236,13 @@ public partial class MainPage : ContentPage
         });
     }
 
+    // Topic: Mobile clear signed-in state
+    // Purpose: Clears the remembered MAUI user and returns to the signed-out home/login UI.
+    // Search keywords: MAUI LOGOUT AUTH SESSION USER API
+    // When to use it: Use after logout or account deletion.
+    // Important notes: This clears app memory only; no cookie exists in the MAUI auth flow.
+    // FLOW_AUTH_STATE_MOBILE_04: ResetToSignedOutHome clears _currentUser and all loaded user data.
+    // This file is involved because logout/delete account must remove the same state SignInAsync created.
     private void ResetToSignedOutHome(string message)
     {
         _currentUser = null;
@@ -225,6 +272,7 @@ public partial class MainPage : ContentPage
 
     private void OnSaveServerClicked(object? sender, EventArgs e)
     {
+        // VALIDATION_SERVER_URL: MAUI server setting must be a valid absolute URL before replacing the API base address.
         if (!ServerEndpointProvider.SaveCustomUrl(ServerUrlEntry.Text, out var saved) || saved == null)
         {
             ShowMessage("Invalid server URL.", true);
@@ -368,6 +416,14 @@ public partial class MainPage : ContentPage
                 return;
 
             var bytes = await ReadFileBytesAsync(file);
+            // VALIDATION_IMAGE_REQUIRED: MAUI upload requires the picked file to contain bytes.
+            if (bytes.Length == 0)
+            {
+                ShowMessage("Image is required.", true);
+                return;
+            }
+
+            // VALIDATION_IMAGE_SIZE: MAUI blocks images above the same 6MB API limit.
             if (bytes.Length > 6 * 1024 * 1024)
             {
                 ShowMessage("Image too large (max 6MB).", true);
@@ -375,6 +431,12 @@ public partial class MainPage : ContentPage
             }
 
             var mimeType = ResolveMimeType(file.FileName);
+            // VALIDATION_IMAGE_MIME / VALIDATION_IMAGE_FILENAME: MAUI only sends recognizable image files.
+            if (!IsValidImageMimeType(mimeType) || !IsValidFileName(file.FileName))
+            {
+                ShowMessage("Invalid image file.", true);
+                return;
+            }
 
             var response = await RequireApi().CreateGarmentAsync(new MobileGarmentCreateRequest(
                 ActiveUserId,
@@ -424,6 +486,20 @@ public partial class MainPage : ContentPage
         MatchResultsList.Clear();
         ShowTab("match");
 
+        // VALIDATION_MATCH_PROMPT: MAUI caps free-text recommendation requests before sending them to the matcher API.
+        if (!IsValidPrompt(MatchRequestEditor.Text))
+        {
+            ShowMessage("Request is too long. Keep it under 500 characters.", true);
+            return;
+        }
+
+        // VALIDATION_USER_ID / VALIDATION_GARMENT_ID: MAUI validates active user and optional seed ids before matching.
+        if (!IsValidGuidText(ActiveUserId) || seedGarmentIds.Any(id => !IsValidGuidText(id)))
+        {
+            ShowMessage("Invalid user or garment selection.", true);
+            return;
+        }
+
         var result = await RequireApi().RunMatchAsync(new MobileMatchRequest(
             ActiveUserId,
             SeedGarmentIds: seedGarmentIds,
@@ -464,12 +540,28 @@ public partial class MainPage : ContentPage
             if (_currentUser == null || !IsAdmin)
                 return;
 
+            var email = (AdminEmailEntry.Text ?? string.Empty).Trim();
+            var password = AdminPasswordEntry.Text ?? string.Empty;
+            var role = AdminRolePicker.SelectedItem?.ToString() ?? "customer";
+            // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_PASSWORD / VALIDATION_ROLE: admin-created users are checked before API call.
+            if (!FullNameRules.TryNormalize(AdminNameEntry.Text, out var fullName))
+            {
+                ShowMessage(FullNameRules.ValidationMessage, true);
+                return;
+            }
+
+            if (!IsValidEmail(email) || !IsValidPassword(password) || !IsValidRole(role))
+            {
+                ShowMessage("Enter a valid email, password, and role.", true);
+                return;
+            }
+
             var created = await RequireApi().CreateUserAsync(new MobileUserCreateRequest(
                 _currentUser.UserId,
-                AdminNameEntry.Text ?? "",
-                AdminEmailEntry.Text ?? "",
-                AdminPasswordEntry.Text ?? "",
-                AdminRolePicker.SelectedItem?.ToString() ?? "customer"));
+                fullName,
+                email,
+                password,
+                role));
 
             if (created == null)
             {
@@ -575,6 +667,13 @@ public partial class MainPage : ContentPage
         if (_currentUser == null)
             return;
 
+        // VALIDATION_GARMENT_ID: recommendation from a garment card requires a valid garment id.
+        if (!IsValidGuidText(garment.GarmentId))
+        {
+            ShowMessage("Invalid garment selection.", true);
+            return;
+        }
+
         await RunSafeAsync(async () =>
         {
             await RunRecommendationAsync(new[] { garment.GarmentId }, allowNoSeed: false);
@@ -585,6 +684,13 @@ public partial class MainPage : ContentPage
     {
         if (_currentUser == null)
             return;
+
+        // VALIDATION_USER_ID / VALIDATION_GARMENT_ID: MAUI validates ids before calling garment delete API.
+        if (!IsValidGuidText(ActiveUserId) || !IsValidGuidText(garment.GarmentId))
+        {
+            ShowMessage("Invalid garment selection.", true);
+            return;
+        }
 
         var confirm = await DisplayAlert("Delete garment", "Delete this garment?", "Delete", "Cancel");
         if (!confirm)
@@ -608,18 +714,30 @@ public partial class MainPage : ContentPage
         }
 
         foreach (var outfit in _outfits.OrderByDescending(x => x.CreatedAt))
-            OutfitList.Add(BuildOutfitCard(outfit, includeActions: true));
+            OutfitList.Add(BuildOutfitCard(outfit, includeDeleteAction: true, includeWearAction: !IsAdmin));
     }
 
-    private View BuildOutfitCard(Outfit outfit, bool includeActions)
+    private View BuildOutfitCard(Outfit outfit, bool includeDeleteAction, bool includeWearAction)
     {
         var card = CreateCard();
         var stack = new VerticalStackLayout { Spacing = 8 };
         stack.Add(new Label { Text = $"{outfit.StyleLabel ?? "Outfit"} - {outfit.Score}%", Style = GetStyle("SectionTitle") });
         stack.Add(new Label { Text = outfit.Explanation ?? "", Style = GetStyle("MutedText") });
+        // FLOW_OUTFIT_WEAR_STATS_MOBILE_05: MAUI outfit card displays wear count, first worn, and last worn.
+        // This file is involved because the API has already attached summary fields to each Outfit object.
+        stack.Add(new Label { Text = FormatWearSummary(outfit), Style = GetStyle("MutedText") });
         stack.Add(BuildImageStrip(new[] { outfit.ShirtGarmentId, outfit.PantsGarmentId, outfit.ShoesGarmentId }));
 
-        if (includeActions)
+        if (includeWearAction)
+        {
+            // FLOW_OUTFIT_WEAR_MOBILE_01: Customer taps Mark worn on a saved outfit card.
+            // This file is involved because the MAUI card starts the action; next step is MarkOutfitWornAsync.
+            var wear = new Button { Text = "Mark worn" };
+            wear.Clicked += async (_, _) => await MarkOutfitWornAsync(outfit);
+            stack.Add(wear);
+        }
+
+        if (includeDeleteAction)
         {
             // FLOW_DELETE_OUTFIT_MOBILE_01: User taps Delete outfit; next step is DeleteOutfitAsync confirmation.
             var delete = new Button { Text = "Delete outfit", Style = GetStyle("SecondaryButton") };
@@ -630,10 +748,39 @@ public partial class MainPage : ContentPage
         return card;
     }
 
+    // Topic: Mark outfit worn from MAUI
+    // Purpose: Sends the selected outfit to the backend so SQL stores the current timestamp.
+    // Search keywords: MAUI MOBILE API OUTFIT_WEAR_LOG OUTFIT ADD TIMESTAMP
+    // When to use it: Use when explaining how a mobile customer records a worn saved outfit.
+    // Important notes: ActiveUserId is the outfit owner; _currentUser.UserId is the signed-in actor.
+    // FLOW_OUTFIT_WEAR_MOBILE_02: MarkOutfitWornAsync sends actor/target/outfit ids to LookLuxApiClient.
+    // This file is involved because it knows which customer data is being viewed; next step is the API client HTTP call.
+    private async Task MarkOutfitWornAsync(Outfit outfit)
+    {
+        // VALIDATION_USER_ID / VALIDATION_OUTFIT_ID: MAUI validates ids before calling wear-log API.
+        if (_currentUser == null || IsAdmin || !IsValidGuidText(_currentUser.UserId) || !IsValidGuidText(ActiveUserId) || !IsValidGuidText(outfit.OutfitId))
+            return;
+
+        await RunSafeAsync(async () =>
+        {
+            var result = await RequireApi().MarkOutfitWornAsync(_currentUser.UserId, ActiveUserId, outfit.OutfitId);
+            ShowMessage(result?.Message ?? "Outfit marked as worn.", result?.Success != true);
+            if (result?.Success == true)
+                await LoadAllAsync();
+        });
+    }
+
     private async Task DeleteOutfitAsync(Outfit outfit)
     {
         if (_currentUser == null)
             return;
+
+        // VALIDATION_USER_ID / VALIDATION_OUTFIT_ID: MAUI validates ids before calling outfit delete API.
+        if (!IsValidGuidText(ActiveUserId) || !IsValidGuidText(outfit.OutfitId))
+        {
+            ShowMessage("Invalid outfit selection.", true);
+            return;
+        }
 
         var confirm = await DisplayAlert("Delete outfit", "Delete this saved outfit?", "Delete", "Cancel");
         if (!confirm)
@@ -714,9 +861,23 @@ public partial class MainPage : ContentPage
         var role = await DisplayActionSheet("Role", "Cancel", null, "customer", "admin");
         if (role == null || role == "Cancel") return;
 
+        // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_ROLE / VALIDATION_USER_ID: admin edit prompts are validated before API update.
+        if (!FullNameRules.TryNormalize(name, out var fullName))
+        {
+            ShowMessage(FullNameRules.ValidationMessage, true);
+            return;
+        }
+
+        if (!IsValidGuidText(user.UserId) || !IsValidGuidText(_currentUser.UserId) ||
+            !IsValidEmail(email) || !IsValidRole(role))
+        {
+            ShowMessage("Enter a valid email and role.", true);
+            return;
+        }
+
         await RunSafeAsync(async () =>
         {
-            await RequireApi().UpdateUserAsync(user.UserId, new MobileUserUpdateRequest(_currentUser.UserId, name, email, role));
+            await RequireApi().UpdateUserAsync(user.UserId, new MobileUserUpdateRequest(_currentUser.UserId, fullName, email, role));
             ShowMessage("User updated.", false);
             await LoadAdminUsersAsync();
         });
@@ -803,7 +964,7 @@ public partial class MainPage : ContentPage
         else
         {
             foreach (var outfit in _outfits.OrderByDescending(x => x.CreatedAt))
-                AdminCustomerOutfitList.Add(BuildOutfitCard(outfit, includeActions: false));
+                AdminCustomerOutfitList.Add(BuildOutfitCard(outfit, includeDeleteAction: false, includeWearAction: false));
         }
     }
 
@@ -951,5 +1112,80 @@ public partial class MainPage : ContentPage
 
         var text = string.Join(" / ", parts);
         return string.IsNullOrWhiteSpace(text) ? "No extra details" : text;
+    }
+
+    // Formats count/first/last worn values for MAUI outfit cards.
+    private static string FormatWearSummary(Outfit outfit)
+    {
+        if (outfit.WearCount <= 0)
+            return "Worn 0 times";
+
+        var first = outfit.FirstWornAt?.ToLocalTime().ToString("g") ?? "unknown";
+        var last = outfit.LastWornAt?.ToLocalTime().ToString("g") ?? "unknown";
+        return $"Worn {outfit.WearCount} time{(outfit.WearCount == 1 ? "" : "s")} | First: {first} | Last: {last}";
+    }
+
+    // Topic: MAUI input validation helpers
+    // Purpose: Checks user-entered mobile values before sending them to backend API endpoints.
+    // Search keywords: VALIDATION_EMAIL VALIDATION_PASSWORD VALIDATION_NAME VALIDATION_ROLE VALIDATION_USER_ID VALIDATION_IMAGE VALIDATION_MATCH_PROMPT
+    // When to use it: Use inside button handlers before calling LookLuxApiClient.
+    // Important notes: These checks improve usability; Program.cs still performs server-side validation.
+    private static bool IsValidEmail(string? email)
+    {
+        // VALIDATION_EMAIL: MAUI checks email shape before login/register/forgot-password/admin save.
+        if (string.IsNullOrWhiteSpace(email) || email.Length > 254)
+            return false;
+
+        try
+        {
+            var address = new MailAddress(email.Trim());
+            return string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsValidPassword(string? password)
+    {
+        // VALIDATION_PASSWORD: MAUI checks passwords are present and 6-128 characters before API calls.
+        return !string.IsNullOrWhiteSpace(password) && password.Length >= 6 && password.Length <= 128;
+    }
+
+    private static bool IsValidRole(string? role)
+    {
+        // VALIDATION_ROLE: MAUI admin user forms only allow customer/admin roles.
+        var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized is "customer" or "admin";
+    }
+
+    private static bool IsValidGuidText(string? value)
+    {
+        // VALIDATION_USER_ID / VALIDATION_GARMENT_ID / VALIDATION_OUTFIT_ID: MAUI checks ids before protected API calls.
+        return Guid.TryParse(value, out _);
+    }
+
+    private static bool IsValidImageMimeType(string? mimeType)
+    {
+        // VALIDATION_IMAGE_MIME: MAUI upload only sends expected image MIME types.
+        var normalized = (mimeType ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized is "image/jpeg" or "image/jpg" or "image/png" or "image/webp" or "image/gif";
+    }
+
+    private static bool IsValidFileName(string? fileName)
+    {
+        // VALIDATION_IMAGE_FILENAME: MAUI rejects empty, overlong, or path-like image names.
+        var name = (fileName ?? string.Empty).Trim();
+        return name.Length is >= 1 and <= 255 &&
+               name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
+               !name.Contains('/') &&
+               !name.Contains('\\');
+    }
+
+    private static bool IsValidPrompt(string? prompt)
+    {
+        // VALIDATION_MATCH_PROMPT: MAUI caps free-text recommendation requests.
+        return (prompt ?? string.Empty).Length <= 500;
     }
 }

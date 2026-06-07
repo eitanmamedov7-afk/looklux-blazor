@@ -13,6 +13,7 @@
 @using Models
 @using DBL
 @using gadifff.Services
+@using System.Net.Mail
 @using BCryptNet = BCrypt.Net.BCrypt
 
 @inject IAuthService Auth
@@ -40,7 +41,7 @@
 
     @if (!_loaded)
     {
-        <p>Loadingâ€¦</p>
+        <p>Loading...</p>
     }
     else if (_mustLogin)
     {
@@ -329,22 +330,24 @@
 
         try
         {
-            var fullName = (_createFullName ?? string.Empty).Trim();
+            var fullNameInput = _createFullName;
             var email = (_createEmail ?? string.Empty).Trim().ToLowerInvariant();
             var password = _createPassword ?? string.Empty;
             var role = NormalizeRole(_createRole);
 
-            if (string.IsNullOrWhiteSpace(fullName) ||
-                string.IsNullOrWhiteSpace(email) ||
+            // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_PASSWORD: web admin create validates all entered account fields.
+            if (!FullNameRules.TryNormalize(fullNameInput, out var fullName) ||
+                !IsValidEmail(email) ||
                 string.IsNullOrWhiteSpace(password))
             {
-                SetError("Full name, email, and password are required.");
+                SetError(FullNameRules.ValidationMessage);
                 return;
             }
 
-            if (password.Length < 6)
+            // VALIDATION_PASSWORD: web admin create enforces the project password length rule.
+            if (!IsValidPassword(password))
             {
-                SetError("Password must be at least 6 characters.");
+                SetError("Password must be 6-128 characters.");
                 return;
             }
 
@@ -403,7 +406,7 @@
         try
         {
             var email = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
-            var fullName = (user.FullName ?? string.Empty).Trim();
+            var fullNameInput = user.FullName;
             var role = NormalizeRole(user.Role);
             var persistedUser = await UserDb.GetByIdAsync(user.UserId);
 
@@ -414,9 +417,10 @@
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
+            // VALIDATION_NAME / VALIDATION_EMAIL: web admin edit validates display name and email shape.
+            if (!FullNameRules.TryNormalize(fullNameInput, out var fullName) || !IsValidEmail(email))
             {
-                SetError("Email and full name are required.");
+                SetError(FullNameRules.ValidationMessage);
                 return;
             }
 
@@ -595,6 +599,29 @@
     {
         var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
         return normalized == "admin" ? "admin" : "customer";
+    }
+
+    private static bool IsValidEmail(string? email)
+    {
+        // VALIDATION_EMAIL: web admin account forms require a real email shape.
+        if (string.IsNullOrWhiteSpace(email) || email.Length > 254)
+            return false;
+
+        try
+        {
+            var address = new MailAddress(email.Trim());
+            return string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsValidPassword(string? password)
+    {
+        // VALIDATION_PASSWORD: web admin-created passwords must match the project length rule.
+        return !string.IsNullOrWhiteSpace(password) && password.Length >= 6 && password.Length <= 128;
     }
 
     // Clears the success/error alert above the admin list.

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using DBL;
@@ -29,6 +30,13 @@ namespace gadifff.Services
         private readonly IDataProtector _passwordResetProtector;
         private readonly ILogger<AuthService> _logger;
 
+        // Topic: Web signed-in user state
+        // Purpose: Keeps the logged-in web user available to Blazor pages after LoginAsync succeeds.
+        // Search keywords: LOGIN AUTH SESSION USER CURRENT COOKIE
+        // When to use it: Show this when explaining where the web project remembers the active user.
+        // Important notes: This is in-memory Blazor service state, with _lastSignedInUser as the current project fallback.
+        // FLOW_AUTH_STATE_WEB_01: AuthService stores the signed-in user in _currentUser after successful login/register.
+        // This file is involved because pages ask AuthService.CurrentUserAsync before loading closet/outfit/admin data.
         private User? _currentUser;
         private static User? _lastSignedInUser;
         private static readonly TimeSpan PasswordResetTokenLifetime = TimeSpan.FromHours(2);
@@ -54,9 +62,15 @@ namespace gadifff.Services
         // validates credentials against UserDB and sets _currentUser for the active session.
         // FLOW_LOGIN_WEB_03: AuthService.LoginAsync receives web credentials from Login.razor.
         // This file is involved because it owns web auth state; next step is UserDB.GetByEmailAsync and BCrypt validation.
+        // FLOW_AUTH_STATE_WEB_02: After BCrypt succeeds, LoginAsync saves the User object in _currentUser/_lastSignedInUser.
+        // This file is involved because this is the exact place the web user becomes "logged in"; next step is UI pages calling CurrentUserAsync.
         public async Task<bool> LoginAsync(string email, string password)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
+            // VALIDATION_EMAIL / VALIDATION_PASSWORD: AuthService rejects malformed login input before UserDB lookup.
+            if (!IsValidEmail(email) || string.IsNullOrWhiteSpace(password))
+                return false;
+
             var list = await _userDb.GetByEmailAsync(email);
             var user = list.FirstOrDefault();
             if (user == null)
@@ -73,6 +87,8 @@ namespace gadifff.Services
             return true;
         }
         // Logout flow used by Logout page/menu actions.
+        // FLOW_AUTH_STATE_WEB_05: LogoutAsync clears _currentUser/_lastSignedInUser so pages stop treating the user as signed in.
+        // This file is involved because logout must clear the same state that login created.
         public Task LogoutAsync()
         {
             _currentUser = null;
@@ -87,6 +103,10 @@ namespace gadifff.Services
         public async Task<bool> RegisterAsync(string fullName, string email, string password, string role)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
+            // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_PASSWORD: AuthService validates web registration before hashing/inserting.
+            if (!FullNameRules.TryNormalize(fullName, out fullName) || !IsValidEmail(email) || !IsValidPassword(password))
+                return false;
+
             var normalizedRole = "customer";
             var existing = await _userDb.GetByEmailAsync(email);
             if (existing.Any())
@@ -95,7 +115,7 @@ namespace gadifff.Services
             {
                 UserId = Guid.NewGuid().ToString(),
                 Email = email,
-                FullName = fullName?.Trim() ?? string.Empty,
+                FullName = fullName,
                 Role = normalizedRole,
                 PasswordHash = BCryptNet.HashPassword(password),
                 CreatedAt = DateTime.UtcNow
@@ -118,7 +138,8 @@ namespace gadifff.Services
         public async Task<PasswordResetEmailStatus> SendPasswordResetEmailAsync(string email, string originBaseUrl)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(originBaseUrl))
+            // VALIDATION_EMAIL / VALIDATION_RESET_ORIGIN: password-reset email needs valid email and reset origin.
+            if (!IsValidEmail(email) || string.IsNullOrWhiteSpace(originBaseUrl))
                 return PasswordResetEmailStatus.InvalidRequest;
             var user = (await _userDb.GetByEmailAsync(email)).FirstOrDefault();
             if (user == null)
@@ -156,9 +177,8 @@ namespace gadifff.Services
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
             token = token?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
-                return false;
-            if (newPassword.Length < 6)
+            // VALIDATION_RESET_TOKEN / VALIDATION_PASSWORD: reset requires a token and a valid new password.
+            if (string.IsNullOrWhiteSpace(token) || !IsValidPassword(newPassword))
                 return false;
 
             string payload;
@@ -187,7 +207,33 @@ namespace gadifff.Services
             var updated = await _userDb.UpdatePasswordHashAsync(user.UserId, newHash);
             return updated > 0;
         }
+
+        private static bool IsValidEmail(string? email)
+        {
+            // VALIDATION_EMAIL: AuthService validates email shape for login/register/reset flows.
+            if (string.IsNullOrWhiteSpace(email) || email.Length > 254)
+                return false;
+
+            try
+            {
+                var address = new MailAddress(email.Trim());
+                return string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsValidPassword(string? password)
+        {
+            // VALIDATION_PASSWORD: AuthService enforces the project password length rule.
+            return !string.IsNullOrWhiteSpace(password) && password.Length >= 6 && password.Length <= 128;
+        }
+
         // Used by pages (for example Closet/Outfits) to gate access and resolve user context.
+        // FLOW_AUTH_STATE_WEB_04: CurrentUserAsync returns the remembered user to pages/layouts that need auth state.
+        // This file is involved because Closet, Outfits, Home, and NavMenu call this before showing user-specific data.
         public Task<User?> CurrentUserAsync()
         {
             if (_currentUser != null)

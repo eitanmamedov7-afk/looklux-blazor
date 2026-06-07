@@ -2,11 +2,11 @@
 @page "/outfits"
 
 @* SEARCH INDEX
-   OUTFIT, RECOMMENDATION, MATCH, SAVE, FILTER, SEARCH, LIST, REMOVE, GARMENT, IMAGE, ADMIN
+   OUTFIT, RECOMMENDATION, MATCH, SAVE, FILTER, SEARCH, LIST, REMOVE, GARMENT, IMAGE, ADMIN, OUTFIT_WEAR_LOG
 
    Topic: WEB SAVED OUTFITS PAGE
-   Purpose: Displays saved recommendations, filters saved outfits, opens matcher, previews images, and deletes outfits.
-   Search keywords: OUTFIT RECOMMENDATION MATCH SAVE FILTER SEARCH LIST REMOVE GARMENT IMAGE ADMIN
+   Purpose: Displays saved recommendations, filters saved outfits, opens matcher, previews images, deletes outfits, and logs worn outfits.
+   Search keywords: OUTFIT RECOMMENDATION MATCH SAVE FILTER SEARCH LIST REMOVE GARMENT IMAGE ADMIN OUTFIT_WEAR_LOG
    When to use it: Show this when explaining saved recommendations and outfit filtering.
    Important notes: Reads OutfitDB plus GarmentDB image/details for the three linked garments. *@
 
@@ -33,6 +33,9 @@
 
 
 @inject OutfitGarmentDB OutfitGarmentDb
+
+
+@inject OutfitWearLogDB OutfitWearLogDb
 
 
 @inject GarmentDB GarmentDb
@@ -148,6 +151,13 @@ else
             </div>
         }
 
+        @if (!string.IsNullOrWhiteSpace(_wearLogMessage))
+        {
+            <div class="alert @(_wearLogIsError ? "alert-danger" : "alert-success")">
+                @_wearLogMessage
+            </div>
+        }
+
 
         @* Layout:
            Empty state or saved outfit list. *@
@@ -176,18 +186,30 @@ else
                                     <div class="text-muted small">@o.CreatedAt.ToLocalTime().ToString("g")</div>
                                 </div>
 
-                                @if (!IsReadOnlyAdminView)
-                                {
+                                <div class="d-flex gap-2 align-items-center">
+                                    @if (!string.Equals(_user?.Role, "admin", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        @* FLOW_OUTFIT_WEAR_WEB_01: Customer clicks Mark worn on a saved outfit card.
+                                           This page is involved because the outfit card is where the action starts; next step is MarkOutfitWornAsync. *@
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                disabled="@_wearLogBusy"
+                                                @onclick="() => MarkOutfitWornAsync(o.OutfitId)">
+                                            Mark worn
+                                        </button>
+                                    }
 
-                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDeleteOutfitDialog(o.OutfitId)">
-                                        Delete outfit
-                                    </button>
-                                }
+                                    @if (!IsReadOnlyAdminView)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDeleteOutfitDialog(o.OutfitId)">
+                                            Delete outfit
+                                        </button>
+                                    }
 
-                                else
-                                {
-                                    <span class="text-muted small">View only</span>
-                                }
+                                    else
+                                    {
+                                        <span class="text-muted small">View only</span>
+                                    }
+                                </div>
                             </div>
 
                             <div class="mb-2">
@@ -210,6 +232,10 @@ else
                             {
                                 <div class="text-muted small mb-2">Where to wear: @o.RecommendedPlaces</div>
                             }
+
+                            @* FLOW_OUTFIT_WEAR_STATS_05: Outfit card displays wear count, first worn, and last worn.
+                               This page is involved because the user/admin sees the final summary here after DB aggregation. *@
+                            <div class="text-muted small mb-2">@FormatWearSummary(o)</div>
 
                             <div class="row row-cols-1 row-cols-md-3 g-2">
 
@@ -573,6 +599,9 @@ else
     private bool _deleteOutfitDialogIsError;
     private bool _deleteOutfitDialogBusy;
     private bool _deleteOutfitDialogCompleted;
+    private string _wearLogMessage = string.Empty;
+    private bool _wearLogIsError;
+    private bool _wearLogBusy;
     private bool _showBestRecommendationWindow;
     private string _bestRecommendationWindowError = string.Empty;
     private string _bestRecommendationRequest = string.Empty;
@@ -712,6 +741,9 @@ else
             if (cts.IsCancellationRequested) return;
 
             _filterOptions = await OutfitDb.GetFilterOptionsAsync(ActiveUserId, request);
+            if (cts.IsCancellationRequested) return;
+
+            await LoadWearSummariesAsync();
             if (cts.IsCancellationRequested) return;
 
             _outfitGarmentsByOutfit.Clear();
@@ -985,6 +1017,56 @@ else
         _previewImageUrl = null;
     }
 
+    // Topic: Load web outfit wear summaries
+    // Purpose: Adds wear count, first worn, and last worn data to the loaded outfit cards.
+    // Search keywords: OUTFIT_WEAR_LOG WEB OUTFIT LIST HISTORY COUNT TIMESTAMP
+    // When to use it: Run after outfit rows load or after a new wear log is inserted.
+    // Important notes: Summary values are calculated from outfit_wear_logs, not from the outfits table.
+    // FLOW_OUTFIT_WEAR_STATS_01: Outfits page asks OutfitWearLogDB for summaries for the currently loaded outfits.
+    // This page is involved because it owns the filtered outfit list; next step is DB aggregation.
+    private async Task LoadWearSummariesAsync()
+    {
+        var summaries = await OutfitWearLogDb.GetSummariesByOutfitIdsAsync(_outfits.Select(x => x.OutfitId));
+        ApplyWearSummaries(_outfits, summaries);
+    }
+
+    // Topic: Apply outfit wear summaries
+    // Purpose: Copies calculated count/first/last values onto each Outfit model before rendering.
+    // Search keywords: OUTFIT_WEAR_LOG WEB OUTFIT LIST HISTORY COUNT TIMESTAMP
+    // When to use it: Use after DB aggregation returns summary values.
+    // Important notes: Outfits with no logs show zero wears.
+    // FLOW_OUTFIT_WEAR_STATS_04: Summary values are copied onto Outfit models for rendering/API serialization.
+    // This page is involved because the web UI renders these model properties directly; next step is card display.
+    private static void ApplyWearSummaries(IEnumerable<Outfit> outfits, IReadOnlyDictionary<string, OutfitWearLog> summaries)
+    {
+        foreach (var outfit in outfits)
+        {
+            if (summaries.TryGetValue(outfit.OutfitId, out var summary))
+            {
+                outfit.WearCount = summary.WearCount;
+                outfit.FirstWornAt = summary.FirstWornAt;
+                outfit.LastWornAt = summary.LastWornAt;
+            }
+            else
+            {
+                outfit.WearCount = 0;
+                outfit.FirstWornAt = null;
+                outfit.LastWornAt = null;
+            }
+        }
+    }
+
+    // Formats the outfit wear summary shown on every outfit card.
+    private static string FormatWearSummary(Outfit outfit)
+    {
+        if (outfit.WearCount <= 0)
+            return "Worn 0 times";
+
+        var first = outfit.FirstWornAt?.ToLocalTime().ToString("g") ?? "unknown";
+        var last = outfit.LastWornAt?.ToLocalTime().ToString("g") ?? "unknown";
+        return $"Worn {outfit.WearCount} time{(outfit.WearCount == 1 ? "" : "s")} | First: {first} | Last: {last}";
+    }
+
     // Function role:
     // Opens matcher without seeds so the user can start a fresh recommendation.
     private void StartNewMatch()
@@ -1034,6 +1116,52 @@ else
         _autoStart = true;
         _requireSeedSelection = true;
         _showMatcher = true;
+    }
+
+    // Topic: Mark outfit worn from web
+    // Purpose: Stores the current server timestamp for the selected saved outfit.
+    // Search keywords: OUTFIT_WEAR_LOG WEB OUTFIT ADD TIMESTAMP
+    // When to use it: Use when explaining how a customer records that an outfit was just worn.
+    // Important notes: Admin accounts cannot mark outfits as worn.
+    // FLOW_OUTFIT_WEAR_WEB_02: MarkOutfitWornAsync validates the visible outfit and calls OutfitWearLogDB.
+    // This file is involved because it owns the clicked outfit card and active user/admin target; next step is OutfitWearLogDB.MarkWornAsync.
+    private async Task MarkOutfitWornAsync(string outfitId)
+    {
+        if (_user == null ||
+            string.Equals(_user.Role, "admin", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(ActiveUserId) ||
+            _wearLogBusy)
+            return;
+
+        _wearLogMessage = string.Empty;
+        _wearLogIsError = false;
+
+        var outfitBelongsToActiveView = _outfits.Any(x =>
+            string.Equals(x.OutfitId, outfitId, StringComparison.OrdinalIgnoreCase));
+
+        if (!outfitBelongsToActiveView)
+        {
+            _wearLogIsError = true;
+            _wearLogMessage = "This outfit is not loaded for the current user.";
+            return;
+        }
+
+        try
+        {
+            _wearLogBusy = true;
+            await OutfitWearLogDb.MarkWornAsync(ActiveUserId, outfitId);
+            await LoadWearSummariesAsync();
+            _wearLogMessage = $"Outfit marked as worn at {DateTime.Now:g}.";
+        }
+        catch (Exception ex)
+        {
+            _wearLogIsError = true;
+            _wearLogMessage = $"Could not mark outfit as worn: {ex.Message}";
+        }
+        finally
+        {
+            _wearLogBusy = false;
+        }
     }
 
     // Function role:

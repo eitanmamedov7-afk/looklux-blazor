@@ -36,6 +36,24 @@ MAUI login through the API.
 - `FLOW_LOGIN_MOBILE_04` - Program.cs endpoint validates credentials with BCrypt. File: `gadifff/Program.cs`
 - `FLOW_LOGIN_MOBILE_05` - UserDB loads the account by email. File: `ConsoleApp1/UserDB.cs`
 
+## FLOW_AUTH_STATE_WEB
+Where the web project keeps the user logged in.
+
+- `FLOW_AUTH_STATE_WEB_00` - Program.cs registers cookie auth middleware in the ASP.NET pipeline. File: `gadifff/Program.cs`
+- `FLOW_AUTH_STATE_WEB_01` - AuthService declares `_currentUser` and `_lastSignedInUser` as the project's remembered web user state. File: `gadifff/Services/AuthService.cs`
+- `FLOW_AUTH_STATE_WEB_02` - LoginAsync stores the validated user in `_currentUser` and `_lastSignedInUser`. File: `gadifff/Services/AuthService.cs`
+- `FLOW_AUTH_STATE_WEB_04` - CurrentUserAsync returns the remembered user to pages/layouts. File: `gadifff/Services/AuthService.cs`
+- `FLOW_AUTH_STATE_WEB_05` - LogoutAsync clears the remembered web user. File: `gadifff/Services/AuthService.cs`
+
+## FLOW_AUTH_STATE_MOBILE
+Where the MAUI app keeps the user logged in.
+
+- `FLOW_AUTH_STATE_MOBILE_00` - Program.cs notes that MAUI does not use the browser cookie middleware. File: `gadifff/Program.cs`
+- `FLOW_AUTH_STATE_MOBILE_01` - MainPage declares `_currentUser` as the remembered mobile user. File: `maui_api/MainPage.xaml.cs`
+- `FLOW_AUTH_STATE_MOBILE_02` - SignInAsync stores the API-returned user DTO and shows the app UI. File: `maui_api/MainPage.xaml.cs`
+- `FLOW_AUTH_STATE_MOBILE_03` - Program.cs returns the safe user DTO from `/api/mobile/auth/login`. File: `gadifff/Program.cs`
+- `FLOW_AUTH_STATE_MOBILE_04` - ResetToSignedOutHome clears `_currentUser` on logout/account deletion. File: `maui_api/MainPage.xaml.cs`
+
 ## FLOW_REGISTER_WEB
 Browser account registration.
 
@@ -202,6 +220,32 @@ MAUI saved outfits display.
 - `FLOW_OUTFIT_VIEW_MOBILE_04` - Program.cs checks actor/target access. File: `gadifff/Program.cs`
 - `FLOW_OUTFIT_VIEW_MOBILE_05` - OutfitDB loads saved outfits. File: `ConsoleApp1/OutfitDB.cs`
 - `FLOW_OUTFIT_VIEW_MOBILE_06` - MAUI deserializes saved outfit JSON into the mobile Outfit model and renders cards. File: `maui_api/Models/Outfit.cs`
+
+## FLOW_OUTFIT_WEAR
+Web and MAUI outfit-only "Mark worn" history.
+
+- `FLOW_OUTFIT_WEAR_WEB_01` - User/admin clicks Mark worn on a saved outfit card. File: `gadifff/Components/Pages/Outfits.razor`
+- `FLOW_OUTFIT_WEAR_WEB_02` - Outfits page validates the visible outfit and active target user. File: `gadifff/Components/Pages/Outfits.razor`
+- `FLOW_OUTFIT_WEAR_WEB_03` - OutfitWearLogDB inserts the current timestamp into `outfit_wear_logs`. File: `ConsoleApp1/OutfitWearLogDB.cs`
+- `FLOW_OUTFIT_WEAR_MOBILE_01` - User/admin taps Mark worn on a MAUI outfit card. File: `maui_api/MainPage.xaml.cs`
+- `FLOW_OUTFIT_WEAR_MOBILE_02` - MAUI sends actor user id, target user id, and outfit id to the API client. File: `maui_api/MainPage.xaml.cs`
+- `FLOW_OUTFIT_WEAR_MOBILE_03` - LookLuxApiClient posts to `/api/mobile/outfits/{outfitId}/wear`. File: `maui_api/LookLuxApiClient.cs`
+- `FLOW_OUTFIT_WEAR_MOBILE_03A` - MobileOutfitWearRequest carries actor/target ids into the backend endpoint. File: `gadifff/Services/MobileApiContracts.cs`
+- `FLOW_OUTFIT_WEAR_MOBILE_04` - Program.cs checks actor access and outfit ownership. File: `gadifff/Program.cs`
+- `FLOW_OUTFIT_WEAR_MOBILE_05` - OutfitWearLogDB inserts the current timestamp into `outfit_wear_logs`. File: `ConsoleApp1/OutfitWearLogDB.cs`
+- `FLOW_OUTFIT_WEAR_DATA_01` - OutfitWearLog defines the data shape for one wear-history row. File: `ConsoleApp2/OutfitWearLog.cs`
+
+## FLOW_OUTFIT_WEAR_STATS
+Web and MAUI display of how many times an outfit was worn, plus first and last worn times.
+
+- `FLOW_OUTFIT_WEAR_STATS_01` - Web Outfits page asks for summaries for currently loaded outfits. File: `gadifff/Components/Pages/Outfits.razor`
+- `FLOW_OUTFIT_WEAR_STATS_02` - OutfitWearLogDB groups `outfit_wear_logs` by outfit id using count/min/max. File: `ConsoleApp1/OutfitWearLogDB.cs`
+- `FLOW_OUTFIT_WEAR_STATS_03` - OutfitWearLog holds calculated summary values as the single outfit-wear model. File: `ConsoleApp2/OutfitWearLog.cs`
+- `FLOW_OUTFIT_WEAR_STATS_04` - Summary values are copied onto Outfit models. File: `gadifff/Components/Pages/Outfits.razor`, `ConsoleApp2/Outfit.cs`, `maui_api/Models/Outfit.cs`
+- `FLOW_OUTFIT_WEAR_STATS_05` - Web outfit card displays count, first worn, and last worn. File: `gadifff/Components/Pages/Outfits.razor`
+- `FLOW_OUTFIT_WEAR_STATS_MOBILE_01` - Mobile outfit endpoint starts loading summary values for MAUI. File: `gadifff/Program.cs`
+- `FLOW_OUTFIT_WEAR_STATS_MOBILE_04` - Program.cs copies summary values onto API Outfit objects. File: `gadifff/Program.cs`
+- `FLOW_OUTFIT_WEAR_STATS_MOBILE_05` - MAUI outfit card displays count, first worn, and last worn. File: `maui_api/MainPage.xaml.cs`
 
 ## FLOW_OUTFIT_FILTER_WEB
 Browser saved outfit filters.

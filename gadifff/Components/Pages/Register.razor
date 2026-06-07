@@ -168,15 +168,21 @@
     // Form payload and validation rules for customer self-registration.
     public class RegisterModel
     {
+        // VALIDATION_NAME: Blazor registration requires a valid first and last name.
         [Required]
+        [ValidFullName]
         public string FullName { get; set; } = string.Empty;
 
+        // VALIDATION_EMAIL: Blazor registration requires a valid email address.
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
 
+        // VALIDATION_PASSWORD: Blazor registration requires the same 6-128 password length as the API.
         [Required]
+        [StringLength(128, MinimumLength = 6, ErrorMessage = "Password must be 6-128 characters.")]
         public string Password { get; set; } = string.Empty;
 
+        // VALIDATION_PASSWORD_CONFIRM: Blazor registration requires the repeated password to match.
         [Required]
         [Compare(nameof(Password), ErrorMessage = "Passwords must match.")]
         public string ConfirmPassword { get; set; } = string.Empty;

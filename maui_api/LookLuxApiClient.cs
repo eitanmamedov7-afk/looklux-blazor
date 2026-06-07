@@ -1,9 +1,9 @@
 // SEARCH INDEX
-// MAUI, MOBILE, API, HTTP, LOGIN, REGISTER, PASSWORD, DASHBOARD, CLOSET, GARMENT, MATCH, OUTFIT, ADMIN, DELETE
+// MAUI, MOBILE, API, HTTP, LOGIN, REGISTER, PASSWORD, DASHBOARD, CLOSET, GARMENT, MATCH, OUTFIT, ADMIN, DELETE, OUTFIT_WEAR_LOG
 //
 // Topic: MAUI API CLIENT
 // Purpose: Centralizes all HTTP calls from MAUI to the Blazor backend API.
-// Search keywords: MAUI MOBILE API HTTP LOGIN REGISTER PASSWORD DASHBOARD CLOSET GARMENT MATCH OUTFIT ADMIN DELETE
+// Search keywords: MAUI MOBILE API HTTP LOGIN REGISTER PASSWORD DASHBOARD CLOSET GARMENT MATCH OUTFIT ADMIN DELETE OUTFIT_WEAR_LOG
 // When to use it: Show this when explaining that MAUI uses the backend through REST-style endpoints.
 // Important notes: This file mirrors the mobile API endpoints defined in gadifff/Program.cs.
 
@@ -154,6 +154,18 @@ public sealed class LookLuxApiClient
         return await DeleteAsync(url);
     }
 
+    // Topic: Mark outfit worn API call
+    // Purpose: Posts a timestamp request for the selected saved outfit.
+    // Search keywords: MAUI MOBILE API OUTFIT_WEAR_LOG OUTFIT ADD TIMESTAMP
+    // When to use it: Use when a customer or admin taps Mark worn in MAUI.
+    // Important notes: actorUserId is the logged-in user; userId is the owner of the outfit being viewed.
+    // FLOW_OUTFIT_WEAR_MOBILE_03: MarkOutfitWornAsync posts the selected outfit to /api/mobile/outfits/{id}/wear.
+    // This file is involved because MAUI uses HTTP only; next step is Program.cs MobileMarkOutfitWorn endpoint.
+    public async Task<MobileBasicResponse?> MarkOutfitWornAsync(string actorUserId, string userId, string outfitId) =>
+        await PostJsonAsync<MobileOutfitWearRequest, MobileBasicResponse>(
+            $"api/mobile/outfits/{Uri.EscapeDataString(outfitId)}/wear",
+            new(actorUserId, userId));
+
     // Topic: Admin users API call
     // Purpose: Requests the admin user list from the backend.
     // FLOW_ADMIN_USER_MANAGE_MOBILE_03: GetUsersAsync requests the admin user list from /api/mobile/users.
@@ -290,6 +302,8 @@ public record MobileGarmentCreateResponse(bool Success, string Message, bool Req
 public record MobileMatchRequest(string UserId, string[]? SeedGarmentIds, bool AllowNoSeed, string? UserRequest);
 
 public record MobileSaveMatchRequest(string UserId, ScoredCombination Recommendation, string[]? SeedGarmentIds);
+
+public record MobileOutfitWearRequest(string ActorUserId, string UserId);
 
 public record MatchResult
 {

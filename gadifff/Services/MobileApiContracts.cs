@@ -111,5 +111,14 @@ public record MobileSaveMatchRequest(
     ScoredCombination Recommendation,
     string[]? SeedGarmentIds);
 
+// Topic: Mobile outfit wear request
+// Purpose: Sends both the logged-in actor and target user for outfit wear logging.
+// Search keywords: API MOBILE OUTFIT_WEAR_LOG OUTFIT ADD TIMESTAMP ADMIN
+// When to use it: Use when MAUI marks a customer/admin-selected outfit as worn.
+// Important notes: ActorUserId protects admin/customer access; UserId is the outfit owner.
+// FLOW_OUTFIT_WEAR_MOBILE_03A: MobileOutfitWearRequest carries actor and target user ids into Program.cs.
+// This file is involved because Program.cs binds API JSON into this contract; next step is the endpoint access check.
+public record MobileOutfitWearRequest(string ActorUserId, string UserId);
+
 // Shared delete request shape for endpoints that only need the acting user id.
 public record MobileDeleteRequest(string UserId);

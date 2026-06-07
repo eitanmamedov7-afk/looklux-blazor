@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
 using Models;
+using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text.Json;
 using BCryptNet = BCrypt.Net.BCrypt;
@@ -56,6 +57,7 @@ builder.Services.AddScoped<UserDB>();
 builder.Services.AddScoped<GarmentDB>();
 builder.Services.AddScoped<OutfitDB>();
 builder.Services.AddScoped<OutfitGarmentDB>();
+builder.Services.AddScoped<OutfitWearLogDB>();
 
 // Topic: Authentication support services
 // Purpose: Registers email sender and AuthService for login, register, forgot password, and reset password.
@@ -82,7 +84,11 @@ builder.Services.AddHttpClient<GeminiClient>();
 // Purpose: Configures browser login sessions for Blazor pages.
 // Search keywords: COOKIE LOGIN LOGOUT AUTH VALIDATE
 // When to use it: Show this when explaining how the web remembers a logged-in user.
-// Important notes: This is only the web session mechanism; MAUI/mobile uses API calls.
+// Important notes: Cookie middleware is registered here, but current page checks read the active user through AuthService.CurrentUserAsync.
+// FLOW_AUTH_STATE_WEB_00: Program.cs registers cookie auth middleware and puts authentication into the ASP.NET request pipeline.
+// This file is involved because middleware is configured at startup; next step is AuthService storing/returning the project user state.
+// FLOW_AUTH_STATE_MOBILE_00: MAUI does not use this cookie middleware; it uses API responses and MainPage._currentUser.
+// This file is involved because mobile API endpoints return DTOs instead of creating a browser cookie.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -227,6 +233,8 @@ app.MapGet("/api/outfits/filters", async (HttpRequest request, OutfitDB outfitDb
 // SECTION: MOBILE API AUTH LOGIN
 // FLOW_LOGIN_MOBILE_04: Program.cs receives /api/mobile/auth/login and validates credentials.
 // This file is involved because it is the mobile API boundary; next step is UserDB.GetByEmailAsync and BCrypt check.
+// FLOW_AUTH_STATE_MOBILE_03: Program.cs returns MobileAuthResponse.User after successful BCrypt validation.
+// This file is involved because MAUI stores this returned DTO in MainPage._currentUser instead of using a cookie.
 // Topic: Mobile login endpoint
 // Purpose: Validates MAUI login credentials and returns a safe user DTO.
 // Search keywords: API MOBILE LOGIN VALIDATE USER PASSWORD
@@ -235,6 +243,10 @@ app.MapGet("/api/outfits/filters", async (HttpRequest request, OutfitDB outfitDb
 app.MapPost("/api/mobile/auth/login", async (MobileAuthRequest request, UserDB userDb) =>
 {
     var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
+    // VALIDATION_EMAIL / VALIDATION_PASSWORD: mobile login requires a valid email shape and non-empty password before DB lookup.
+    if (!IsValidEmail(email) || string.IsNullOrWhiteSpace(request.Password))
+        return Results.Ok(new MobileAuthResponse(false, "Invalid email or password.", null));
+
     var user = (await userDb.GetByEmailAsync(email)).FirstOrDefault();
     if (user == null ||
         string.IsNullOrWhiteSpace(user.PasswordHash) ||
@@ -258,19 +270,19 @@ app.MapPost("/api/mobile/auth/login", async (MobileAuthRequest request, UserDB u
 // Important notes: Password is hashed before insert; role is customer by default.
 app.MapPost("/api/mobile/auth/register", async (MobileRegisterRequest request, UserDB userDb) =>
 {
-    var fullName = (request.FullName ?? string.Empty).Trim();
     var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
     var password = request.Password ?? string.Empty;
 
-    if (string.IsNullOrWhiteSpace(fullName) ||
-        string.IsNullOrWhiteSpace(email) ||
-        string.IsNullOrWhiteSpace(password))
-    {
-        return Results.BadRequest(new MobileAuthResponse(false, "Full name, email, and password are required.", null));
-    }
+    // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_PASSWORD: mobile registration validates every user-entered identity field.
+    if (!FullNameRules.TryNormalize(request.FullName, out var fullName))
+        return Results.BadRequest(new MobileAuthResponse(false, FullNameRules.ValidationMessage, null));
 
-    if (password.Length < 6)
-        return Results.BadRequest(new MobileAuthResponse(false, "Password must be at least 6 characters.", null));
+    if (!IsValidEmail(email) || string.IsNullOrWhiteSpace(password))
+        return Results.BadRequest(new MobileAuthResponse(false, "Email and password are required.", null));
+
+    // VALIDATION_PASSWORD: mobile registration enforces project password length before hashing.
+    if (!IsValidPassword(password))
+        return Results.BadRequest(new MobileAuthResponse(false, "Password must be 6-128 characters.", null));
 
     if ((await userDb.GetByEmailAsync(email)).Any())
         return Results.Conflict(new MobileAuthResponse(false, "Email already exists.", null));
@@ -311,6 +323,10 @@ app.MapPost("/api/mobile/auth/forgot-password", async (
     var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
     var origin = ResolvePasswordResetOrigin(request.OriginBaseUrl, httpRequest, configuration);
 
+    // VALIDATION_EMAIL: forgot-password only accepts a real email shape before AuthService creates a reset email.
+    if (!IsValidEmail(email))
+        return Results.Ok(new MobileBasicResponse(false, "Enter a valid email address."));
+
     var status = await authService.SendPasswordResetEmailAsync(email, origin);
     var response = status switch
     {
@@ -330,6 +346,10 @@ app.MapPost("/api/mobile/auth/reset-password", async (
     MobileResetPasswordRequest request,
     IAuthService authService) =>
 {
+    // VALIDATION_PASSWORD: reset-password requires the same password length rule as registration.
+    if (!IsValidPassword(request.NewPassword))
+        return Results.Ok(new MobileBasicResponse(false, "Password must be 6-128 characters."));
+
     var ok = await authService.ResetPasswordAsync(request.Token ?? string.Empty, request.NewPassword ?? string.Empty);
     return Results.Ok(new MobileBasicResponse(
         ok,
@@ -354,6 +374,10 @@ app.MapGet("/api/mobile/dashboard", async (
     GarmentDB garmentDb,
     OutfitDB outfitDb) =>
 {
+    // VALIDATION_USER_ID: dashboard requests must identify the acting user before any counts are loaded.
+    if (!IsValidGuidText(actorUserId))
+        return Results.BadRequest("actorUserId is required.");
+
     var actor = await userDb.GetByIdAsync(actorUserId);
     if (actor == null)
         return Results.BadRequest("actorUserId is required.");
@@ -403,6 +427,10 @@ app.MapGet("/api/mobile/closet/items", async (
     UserDB userDb,
     GarmentDB garmentDb) =>
 {
+    // VALIDATION_USER_ID: closet API validates actor and optional target user ids before authorization checks.
+    if (!IsValidGuidText(actorUserId) || (!string.IsNullOrWhiteSpace(userId) && !IsValidGuidText(userId)))
+        return Results.BadRequest("Invalid user id.");
+
     var actor = await userDb.GetByIdAsync(actorUserId);
     if (actor == null)
         return Results.BadRequest("actorUserId is required.");
@@ -422,16 +450,23 @@ app.MapGet("/api/mobile/closet/items", async (
 // Topic: Mobile outfit list endpoint
 // FLOW_OUTFIT_VIEW_MOBILE_04: Program.cs receives /api/mobile/outfits/items, checks actor access, and loads outfits.
 // This file is involved because admins may view another user; next step is OutfitDB.GetByUserAsync.
+// FLOW_OUTFIT_WEAR_STATS_MOBILE_01: Mobile outfit list endpoint also loads wear summaries for each returned outfit.
+// This file is involved because MAUI receives outfit JSON only; next step is OutfitWearLogDB summary aggregation.
 // Purpose: Returns saved outfit recommendations for MAUI.
-// Search keywords: API MOBILE OUTFIT LIST RECOMMENDATION ADMIN
+// Search keywords: API MOBILE OUTFIT LIST RECOMMENDATION ADMIN OUTFIT_WEAR_LOG COUNT TIMESTAMP
 // When to use it: Show this when explaining saved outfit display in MAUI.
-// Important notes: Uses OutfitDB; images are later loaded through the media endpoint.
+// Important notes: Uses OutfitDB plus OutfitWearLogDB; images are later loaded through the media endpoint.
 app.MapGet("/api/mobile/outfits/items", async (
     string actorUserId,
     string? userId,
     UserDB userDb,
-    OutfitDB outfitDb) =>
+    OutfitDB outfitDb,
+    OutfitWearLogDB outfitWearLogDb) =>
 {
+    // VALIDATION_USER_ID: outfit API validates actor and optional target user ids before authorization checks.
+    if (!IsValidGuidText(actorUserId) || (!string.IsNullOrWhiteSpace(userId) && !IsValidGuidText(userId)))
+        return Results.BadRequest("Invalid user id.");
+
     var actor = await userDb.GetByIdAsync(actorUserId);
     if (actor == null)
         return Results.BadRequest("actorUserId is required.");
@@ -441,6 +476,8 @@ app.MapGet("/api/mobile/outfits/items", async (
         return Results.Forbid();
 
     var outfits = await outfitDb.GetByUserAsync(targetUserId, 400);
+    var summaries = await outfitWearLogDb.GetSummariesByOutfitIdsAsync(outfits.Select(x => x.OutfitId));
+    ApplyOutfitWearSummaries(outfits, summaries);
     return Results.Ok(outfits.OrderByDescending(x => x.CreatedAt));
 })
 .WithName("MobileOutfitItems")
@@ -457,6 +494,10 @@ app.MapGet("/api/mobile/outfits/items", async (
 // Important notes: Returns safe DTOs and never exposes password hashes.
 app.MapGet("/api/mobile/users", async (string actorUserId, UserDB userDb) =>
 {
+    // VALIDATION_USER_ID: admin user list requires a valid acting user id before admin-role check.
+    if (!IsValidGuidText(actorUserId))
+        return Results.BadRequest("Invalid actor user id.");
+
     var actor = await userDb.GetByIdAsync(actorUserId);
     if (!IsAdmin(actor))
         return Results.Forbid();
@@ -473,24 +514,28 @@ app.MapGet("/api/mobile/users", async (string actorUserId, UserDB userDb) =>
 // Mobile admin creates customer/admin accounts, matching AdminClosets.razor behavior.
 app.MapPost("/api/mobile/users", async (MobileUserCreateRequest request, UserDB userDb) =>
 {
+    // VALIDATION_USER_ID: admin create-user requires a valid acting user id before admin-role check.
+    if (!IsValidGuidText(request.ActorUserId))
+        return Results.BadRequest("Invalid actor user id.");
+
     var actor = await userDb.GetByIdAsync(request.ActorUserId);
     if (!IsAdmin(actor))
         return Results.Forbid();
 
-    var fullName = (request.FullName ?? string.Empty).Trim();
     var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
     var password = request.Password ?? string.Empty;
     var role = NormalizeRole(request.Role);
 
-    if (string.IsNullOrWhiteSpace(fullName) ||
-        string.IsNullOrWhiteSpace(email) ||
-        string.IsNullOrWhiteSpace(password))
-    {
-        return Results.BadRequest("Full name, email, and password are required.");
-    }
+    // VALIDATION_NAME / VALIDATION_EMAIL / VALIDATION_PASSWORD: admin-created users validate all entered identity fields.
+    if (!FullNameRules.TryNormalize(request.FullName, out var fullName))
+        return Results.BadRequest(FullNameRules.ValidationMessage);
 
-    if (password.Length < 6)
-        return Results.BadRequest("Password must be at least 6 characters.");
+    if (!IsValidEmail(email) || string.IsNullOrWhiteSpace(password))
+        return Results.BadRequest("Email and password are required.");
+
+    // VALIDATION_PASSWORD: admin-created passwords follow the same 6-128 length rule.
+    if (!IsValidPassword(password))
+        return Results.BadRequest("Password must be 6-128 characters.");
 
     if ((await userDb.GetByEmailAsync(email)).Any())
         return Results.Conflict("Email already exists.");
@@ -514,6 +559,10 @@ app.MapPost("/api/mobile/users", async (MobileUserCreateRequest request, UserDB 
 // Mobile admin updates account identity/role while protecting the last admin.
 app.MapPut("/api/mobile/users/{userId}", async (string userId, MobileUserUpdateRequest request, UserDB userDb) =>
 {
+    // VALIDATION_USER_ID: admin update requires valid target and actor ids before DB lookup.
+    if (!IsValidGuidText(userId) || !IsValidGuidText(request.ActorUserId))
+        return Results.BadRequest("Invalid user id.");
+
     var actor = await userDb.GetByIdAsync(request.ActorUserId);
     if (!IsAdmin(actor))
         return Results.Forbid();
@@ -523,11 +572,14 @@ app.MapPut("/api/mobile/users/{userId}", async (string userId, MobileUserUpdateR
         return Results.NotFound();
 
     var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
-    var fullName = (request.FullName ?? string.Empty).Trim();
     var role = NormalizeRole(request.Role);
 
-    if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
-        return Results.BadRequest("Email and full name are required.");
+    // VALIDATION_NAME / VALIDATION_EMAIL: admin updates require a valid display name and email shape.
+    if (!FullNameRules.TryNormalize(request.FullName, out var fullName))
+        return Results.BadRequest(FullNameRules.ValidationMessage);
+
+    if (!IsValidEmail(email))
+        return Results.BadRequest("Enter a valid email address.");
 
     if (string.Equals(actor.UserId, user.UserId, StringComparison.OrdinalIgnoreCase) && role != "admin")
         return Results.BadRequest("You cannot remove your own admin role.");
@@ -560,6 +612,10 @@ app.MapDelete("/api/mobile/users/{userId}", async (
     OutfitDB outfitDb,
     OutfitGarmentDB outfitGarmentDb) =>
 {
+    // VALIDATION_USER_ID: admin delete validates actor and target ids before authorization/deletion.
+    if (!IsValidGuidText(actorUserId) || !IsValidGuidText(userId))
+        return Results.BadRequest("Invalid user id.");
+
     var actor = await userDb.GetByIdAsync(actorUserId);
     if (!IsAdmin(actor))
         return Results.Forbid();
@@ -597,6 +653,10 @@ app.MapDelete("/api/mobile/account", async (
     OutfitDB outfitDb,
     OutfitGarmentDB outfitGarmentDb) =>
 {
+    // VALIDATION_USER_ID: self-delete validates the user id before loading the account.
+    if (!IsValidGuidText(userId))
+        return Results.BadRequest("Invalid user id.");
+
     var user = await userDb.GetByIdAsync(userId);
     if (user == null)
         return Results.NotFound();
@@ -625,12 +685,14 @@ app.MapPost("/api/mobile/garments", async (
     GarmentDB garmentDb,
     GarmentFeatureService featureService) =>
 {
-    if (string.IsNullOrWhiteSpace(request.UserId))
+    // VALIDATION_USER_ID: upload must be tied to a valid user id.
+    if (!IsValidGuidText(request.UserId))
         return Results.BadRequest(new MobileGarmentCreateResponse(false, "Missing user id.", false, null));
 
     byte[] imageBytes;
     try
     {
+        // VALIDATION_IMAGE_BASE64: image bytes must be valid base64 before AI analysis or DB insert.
         imageBytes = Convert.FromBase64String(request.ImageBase64 ?? string.Empty);
     }
     catch
@@ -638,14 +700,19 @@ app.MapPost("/api/mobile/garments", async (
         return Results.BadRequest(new MobileGarmentCreateResponse(false, "Invalid image data.", false, null));
     }
 
+    // VALIDATION_IMAGE_REQUIRED: upload must include non-empty image bytes.
     if (imageBytes.Length == 0)
         return Results.BadRequest(new MobileGarmentCreateResponse(false, "Image is required.", false, null));
 
+    // VALIDATION_IMAGE_SIZE: upload is capped at 6MB before memory/AI/database work.
     if (imageBytes.Length > 6 * 1024 * 1024)
         return Results.BadRequest(new MobileGarmentCreateResponse(false, "Image too large (max 6MB).", false, null));
 
     var mimeType = string.IsNullOrWhiteSpace(request.MimeType) ? "image/jpeg" : request.MimeType.Trim();
     var fileName = string.IsNullOrWhiteSpace(request.FileName) ? "upload.jpg" : request.FileName.Trim();
+    // VALIDATION_IMAGE_MIME / VALIDATION_IMAGE_FILENAME: upload metadata must be image-only and not path-like.
+    if (!IsValidImageMimeType(mimeType) || !IsValidFileName(fileName))
+        return Results.BadRequest(new MobileGarmentCreateResponse(false, "Invalid image file.", false, null));
     var featureJson = "{}";
     var parsed = MobileGarmentFeatures.Empty;
 
@@ -727,6 +794,10 @@ app.MapDelete("/api/mobile/garments/{garmentId}", async (
     string userId,
     GarmentDB garmentDb) =>
 {
+    // VALIDATION_GARMENT_ID / VALIDATION_USER_ID: garment delete validates route/query ids before ownership check.
+    if (!IsValidGuidText(garmentId) || !IsValidGuidText(userId))
+        return Results.BadRequest("Invalid garment or user id.");
+
     var garment = await garmentDb.GetByIdAsync(garmentId);
     if (garment == null)
         return Results.NotFound();
@@ -752,6 +823,14 @@ app.MapDelete("/api/mobile/garments/{garmentId}", async (
 // This file is involved because the API endpoint bridges MAUI to the shared recommendation service; next step is MatchingService validation/scoring.
 app.MapPost("/api/mobile/matches/run", async (MobileMatchRequest request, MatchingService matching) =>
 {
+    // VALIDATION_USER_ID / VALIDATION_MATCH_PROMPT: recommendation requests require a valid user and bounded prompt text.
+    if (!IsValidGuidText(request.UserId) || !IsValidPrompt(request.UserRequest))
+        return Results.BadRequest(MatchResult.CreateError("Invalid match request."));
+
+    // VALIDATION_GARMENT_ID: optional seed garment ids must be GUID-shaped before matching.
+    if ((request.SeedGarmentIds ?? Array.Empty<string>()).Any(id => !IsValidGuidText(id)))
+        return Results.BadRequest(MatchResult.CreateError("Invalid garment selection."));
+
     var result = await matching.FindMatchesAsync(
         request.UserId,
         request.SeedGarmentIds ?? Array.Empty<string>(),
@@ -774,6 +853,14 @@ app.MapPost("/api/mobile/matches/run", async (MobileMatchRequest request, Matchi
 // Important notes: Duplicate combinations are blocked by MatchingService/OutfitDB.
 app.MapPost("/api/mobile/matches/save", async (MobileSaveMatchRequest request, MatchingService matching) =>
 {
+    // VALIDATION_USER_ID: saving a recommendation requires a valid outfit owner user id.
+    if (!IsValidGuidText(request.UserId))
+        return Results.BadRequest(SaveOutfitResult.Fail("Invalid user id."));
+
+    // VALIDATION_GARMENT_ID: optional seed garment ids must be GUID-shaped before saving outfit links.
+    if ((request.SeedGarmentIds ?? Array.Empty<string>()).Any(id => !IsValidGuidText(id)))
+        return Results.BadRequest(SaveOutfitResult.Fail("Invalid garment selection."));
+
     var result = await matching.SaveOutfitSuggestionAsync(
         request.UserId,
         request.Recommendation,
@@ -781,6 +868,54 @@ app.MapPost("/api/mobile/matches/save", async (MobileSaveMatchRequest request, M
     return Results.Ok(result);
 })
 .WithName("MobileSaveMatch")
+.WithTags("Mobile API");
+
+// Mobile outfit wear log:
+// stores that the selected saved outfit was just worn, using the server/database timestamp.
+// Topic: Mobile mark outfit worn endpoint
+// Purpose: Lets MAUI record an outfit-only worn timestamp for a customer or admin-selected customer.
+// Search keywords: API MOBILE OUTFIT_WEAR_LOG OUTFIT ADD TIMESTAMP ADMIN
+// When to use it: Show this when explaining how MAUI writes outfit usage history through the API.
+// Important notes: This endpoint does not edit/delete outfits; it only inserts into outfit_wear_logs.
+// FLOW_OUTFIT_WEAR_MOBILE_04: Program.cs checks actor access and outfit ownership before writing the wear log.
+// This file is involved because MAUI must write through API, not directly to MySQL; next step is OutfitWearLogDB.MarkWornAsync.
+app.MapPost("/api/mobile/outfits/{outfitId}/wear", async (
+    string outfitId,
+    MobileOutfitWearRequest request,
+    UserDB userDb,
+    OutfitDB outfitDb,
+    OutfitWearLogDB outfitWearLogDb) =>
+{
+    // VALIDATION_OUTFIT_ID / VALIDATION_USER_ID: wear logging validates outfit, actor, and optional target ids before DB write.
+    if (!IsValidGuidText(outfitId) ||
+        !IsValidGuidText(request.ActorUserId) ||
+        (!string.IsNullOrWhiteSpace(request.UserId) && !IsValidGuidText(request.UserId)))
+    {
+        return Results.BadRequest(new MobileBasicResponse(false, "Invalid outfit or user id."));
+    }
+
+    var actor = await userDb.GetByIdAsync(request.ActorUserId);
+    if (actor == null)
+        return Results.BadRequest(new MobileBasicResponse(false, "actorUserId is required."));
+
+    if (IsAdmin(actor))
+        return Results.Forbid();
+
+    var targetUserId = string.IsNullOrWhiteSpace(request.UserId)
+        ? actor.UserId
+        : request.UserId.Trim();
+
+    if (!CanAccessUserData(actor, targetUserId))
+        return Results.Forbid();
+
+    var owned = await outfitDb.GetByUserAsync(targetUserId, 2000);
+    if (!owned.Any(x => string.Equals(x.OutfitId, outfitId, StringComparison.OrdinalIgnoreCase)))
+        return Results.NotFound(new MobileBasicResponse(false, "Outfit was not found for this user."));
+
+    await outfitWearLogDb.MarkWornAsync(targetUserId, outfitId);
+    return Results.Ok(new MobileBasicResponse(true, "Outfit marked as worn."));
+})
+.WithName("MobileMarkOutfitWorn")
 .WithTags("Mobile API");
 
 // Mobile outfit delete removes link rows first, then the outfit row.
@@ -792,6 +927,10 @@ app.MapDelete("/api/mobile/outfits/{outfitId}", async (
     OutfitDB outfitDb,
     OutfitGarmentDB outfitGarmentDb) =>
 {
+    // VALIDATION_OUTFIT_ID / VALIDATION_USER_ID: outfit delete validates ids before ownership and delete work.
+    if (!IsValidGuidText(outfitId) || !IsValidGuidText(userId))
+        return Results.BadRequest("Invalid outfit or user id.");
+
     var owned = await outfitDb.GetByUserAsync(userId, 2000);
     if (!owned.Any(x => string.Equals(x.OutfitId, outfitId, StringComparison.OrdinalIgnoreCase)))
         return Results.Forbid();
@@ -1074,11 +1213,94 @@ static IReadOnlyList<MobileUsagePoint> BuildMobileUsagePoints(
     return points;
 }
 
+// Topic: Apply outfit wear summaries to API models
+// Purpose: Copies count, first worn, and last worn values onto Outfit objects before returning JSON.
+// Search keywords: API MOBILE OUTFIT_WEAR_LOG OUTFIT HISTORY COUNT TIMESTAMP
+// When to use it: Use when the mobile outfit endpoint needs to show wear summary on cards.
+// Important notes: This only enriches response models; it does not update the outfits table.
+// FLOW_OUTFIT_WEAR_STATS_MOBILE_04: Program.cs copies DB summary values onto Outfit objects for MAUI JSON.
+// This file is involved because the mobile API response must include summary data; next step is MAUI card rendering.
+static void ApplyOutfitWearSummaries(IEnumerable<Outfit> outfits, IReadOnlyDictionary<string, OutfitWearLog> summaries)
+{
+    foreach (var outfit in outfits)
+    {
+        if (summaries.TryGetValue(outfit.OutfitId, out var summary))
+        {
+            outfit.WearCount = summary.WearCount;
+            outfit.FirstWornAt = summary.FirstWornAt;
+            outfit.LastWornAt = summary.LastWornAt;
+        }
+        else
+        {
+            outfit.WearCount = 0;
+            outfit.FirstWornAt = null;
+            outfit.LastWornAt = null;
+        }
+    }
+}
+
 // Keeps role storage limited to admin/customer.
 static string NormalizeRole(string? role)
 {
     var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
     return normalized == "admin" ? "admin" : "customer";
+}
+
+// Topic: API input validation helpers
+// Purpose: Centralizes validation for values that users send from MAUI/mobile API requests.
+// Search keywords: VALIDATION_EMAIL VALIDATION_PASSWORD VALIDATION_NAME VALIDATION_ROLE VALIDATION_USER_ID VALIDATION_IMAGE VALIDATION_PROMPT
+// When to use it: Use before database lookup/insert/update or AI processing in mobile endpoints.
+// Important notes: Web forms also have DataAnnotations; API endpoints must still validate because clients can bypass UI.
+static bool IsValidEmail(string? email)
+{
+    // VALIDATION_EMAIL: checks that a user-supplied email has a normal email address shape before DB/account work.
+    if (string.IsNullOrWhiteSpace(email) || email.Length > 254)
+        return false;
+
+    try
+    {
+        var address = new MailAddress(email.Trim());
+        return string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+static bool IsValidPassword(string? password)
+{
+    // VALIDATION_PASSWORD: checks that a user-supplied password meets the project minimum length.
+    return !string.IsNullOrWhiteSpace(password) && password.Length >= 6 && password.Length <= 128;
+}
+
+static bool IsValidGuidText(string? value)
+{
+    // VALIDATION_USER_ID / VALIDATION_GARMENT_ID / VALIDATION_OUTFIT_ID: checks ids are GUID-shaped before DB access.
+    return Guid.TryParse(value, out _);
+}
+
+static bool IsValidImageMimeType(string? mimeType)
+{
+    // VALIDATION_IMAGE_MIME: allows only image MIME types the upload flow is expected to handle.
+    var normalized = (mimeType ?? string.Empty).Trim().ToLowerInvariant();
+    return normalized is "image/jpeg" or "image/jpg" or "image/png" or "image/webp" or "image/gif";
+}
+
+static bool IsValidFileName(string? fileName)
+{
+    // VALIDATION_IMAGE_FILENAME: rejects empty/overlong names and path-like values from upload requests.
+    var name = (fileName ?? string.Empty).Trim();
+    return name.Length is >= 1 and <= 255 &&
+           name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
+           !name.Contains('/') &&
+           !name.Contains('\\');
+}
+
+static bool IsValidPrompt(string? prompt)
+{
+    // VALIDATION_MATCH_PROMPT: caps user-written recommendation prompts so they cannot become oversized API input.
+    return (prompt ?? string.Empty).Length <= 500;
 }
 
 // Picks the AI value first, then manual/mobile fallback values.

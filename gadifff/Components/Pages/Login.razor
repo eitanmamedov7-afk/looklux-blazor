@@ -108,9 +108,11 @@
     // Request payload for this page only; mirrors the two fields needed by AuthService.LoginAsync.
     public class LoginModel
     {
+        // VALIDATION_EMAIL: Blazor login requires a valid email address before AuthService receives the form.
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
 
+        // VALIDATION_PASSWORD: Blazor login requires a password value before AuthService receives the form.
         [Required]
         public string Password { get; set; } = string.Empty;
     }

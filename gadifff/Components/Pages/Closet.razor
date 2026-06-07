@@ -184,7 +184,7 @@ else
                 <div class="card-body d-flex flex-column flex-md-row align-items-start gap-3">
                     <div>
                         <h5 class="card-title mb-1">Upload garment</h5>
-                        <div class="text-muted small">WeÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ll analyze the image to detect type, color, fit, and more.</div>
+                        <div class="text-muted small">We will analyze the image to detect type, color, fit, and more.</div>
                     </div>
                     <div class="ms-md-auto">
 
@@ -567,7 +567,7 @@ else
             <div class="spinner-border text-light blocking-loading-spinner" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="mt-3 fw-bold blocking-loading-title">Analyzing garmentÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</div>
+            <div class="mt-3 fw-bold blocking-loading-title">Analyzing garment...</div>
             <div class="text-muted small blocking-loading-subtitle">@_loadingText</div>
         </div>
     </div>
@@ -724,7 +724,7 @@ else
         }
 
         _loading = true;
-        _loadingText = "Analyzing garmentÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦";
+        _loadingText = "Analyzing garment...";
         StateHasChanged();
 
         byte[]? bytes = null;
@@ -986,7 +986,7 @@ else
         if (_pendingBytes == null || _pendingHash == null || _currentUser == null) return;
 
         _loading = true;
-        _loadingText = "Saving manuallyÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦";
+        _loadingText = "Saving manually...";
         StateHasChanged();
 
         try
