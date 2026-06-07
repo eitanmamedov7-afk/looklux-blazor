@@ -1,39 +1,34 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
 
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשכבט הדיבי, לשירותים ולדפי התצוגה.
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+// SEARCH INDEX
+// MODEL, USER, LOGIN, REGISTER, ADMIN, PASSWORD, ROLE
+//
+// Topic: USER MODEL
+// Purpose: Represents one row from the users table in C#.
+// Search keywords: MODEL USER LOGIN REGISTER ADMIN PASSWORD ROLE
+// When to use it: Show this when explaining what user data moves between DB, auth, pages, and API.
+// Important notes: PasswordHash must stay server-side and should not be exposed to clients.
 
-
-
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace Models
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // SECTION: USER DATA SHAPE
+    // Topic: User data model
+    // Purpose: Holds account identity, role, password hash, and creation date.
+    // Search keywords: MODEL USER ROLE PASSWORD
+    // When to use it: Use when tracing UserDB rows into AuthService or admin pages.
+    // Important notes: Mobile uses MobileUserDto instead of returning this full model.
     public class User
     {
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string UserId { get; set; } = "";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string Email { get; set; } = "";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string FullName { get; set; } = "";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string Role { get; set; } = "customer";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string PasswordHash { get; set; } = "";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public DateTime CreatedAt { get; set; }
     }
 }

@@ -1,30 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <assemblyIdentity version="1.0.0.0" name="gadifff.Mobile.WinUI.app"/>
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <windowsSettings>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/PM</dpiAware>
 
-      <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
     </windowsSettings>
   </application>

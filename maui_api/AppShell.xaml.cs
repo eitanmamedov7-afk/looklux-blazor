@@ -1,22 +1,19 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// מה הקובץ עושה: הקובץ שיך לאפליקציית המובייל ומגדיר מסך, אתחול או התאמה לפלטפורמה.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לפרויקט האטר, להגדרי המובייל, לדף הראוי ולכטובת השרת.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים בדף הראוי של המובייל ובקוד שמוחליט לאיזה כטובת שרת להתחבר.
 
 
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
+
 namespace gadifff.Mobile;
 
-// הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+// SEARCH INDEX
+// MAUI, MOBILE, SHELL, TEMPLATE, UNUSED
+//
+// Topic: MAUI SHELL TEMPLATE
+// Purpose: Template Shell navigation class that is compiled but not used as the current first screen.
+// Search keywords: MAUI SHELL TEMPLATE UNUSED
+// When to use it: Mention only if asked why AppShell exists.
+// Important notes: App.CreateWindow currently opens MainPage directly, so user/admin/API flows do not pass through AppShell.
 public partial class AppShell : Shell
 {
-	// הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
 	public AppShell()
 	{
 		InitializeComponent();

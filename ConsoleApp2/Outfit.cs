@@ -1,64 +1,49 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
 
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשכבט הדיבי, לשירותים ולדפי התצוגה.
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+// SEARCH INDEX
+// MODEL, OUTFIT, RECOMMENDATION, MATCH, SAVE, SCORE, FILTER, GARMENT
+//
+// Topic: OUTFIT MODEL
+// Purpose: Represents one saved recommendation/outfit result.
+// Search keywords: MODEL OUTFIT RECOMMENDATION MATCH SAVE SCORE FILTER GARMENT
+// When to use it: Show this when explaining saved outfits and recommendation results.
+// Important notes: Shirt/Pants/Shoes ids point to garments; outfit_garments also stores relation rows.
 
-
-
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace Models
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // SECTION: OUTFIT DATA SHAPE
+    // Topic: Outfit data model
+    // Purpose: Holds recommendation metadata, score, explanation, seed, and linked garment ids.
+    // Search keywords: MODEL OUTFIT SCORE RECOMMENDATION GARMENT
+    // When to use it: Use when tracing a saved recommendation from MatchingService to Outfits page.
+    // Important notes: This is not the closet item; it is the saved combination result.
     public class Outfit
     {
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string OutfitId { get; set; } = string.Empty;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string UserId { get; set; } = string.Empty;
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? ShirtGarmentId { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? PantsGarmentId { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? ShoesGarmentId { get; set; }
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public int Score { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public int Rank { get; set; } = 1;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? StyleLabel { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Explanation { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? RecommendedPlaces { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? SeedType { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? SeedGarmentId { get; set; }
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public bool LabelIsCompatible { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string LabelSource { get; set; } = string.Empty;
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? RequestedGarmentIds { get; set; }
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public DateTime CreatedAt { get; set; }
     }
 }

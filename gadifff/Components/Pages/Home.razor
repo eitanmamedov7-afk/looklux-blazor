@@ -1,6 +1,14 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
-@page "/"
+﻿@page "/"
 @rendermode InteractiveServer
+
+@* SEARCH INDEX
+   HOME, DASHBOARD, ADMIN, COUNT, CHART, USER, GARMENT, OUTFIT, LIST
+
+   Topic: HOME DASHBOARD PAGE
+   Purpose: Shows landing/home content and admin/customer dashboard summary data.
+   Search keywords: HOME DASHBOARD ADMIN COUNT CHART USER GARMENT OUTFIT LIST
+   When to use it: Show this when explaining project statistics and admin charts.
+   Important notes: Admin sees broader counts; customer sees user-focused app entry points. *@
 
 @using System.Globalization
 @using DBL
@@ -15,8 +23,14 @@
 
 <PageTitle>Home</PageTitle>
 
+@* Role in project:
+   Landing page after login.
+   Customers see navigation into closet/outfit workflows; admins see dashboard counts and usage chart. *@
 @if (IsAdmin)
 {
+    @* Layout:
+       Admin dashboard shell with a header button that opens customer management.
+       This affects admin review/management, not the customer closet workflow. *@
     <div class="page-shell">
         <div class="section-header">
             <div>
@@ -30,11 +44,15 @@
             </div>
         </div>
 
+        @* Layout:
+           Warning alert shown only when admin dashboard statistics fail to load. *@
         @if (!string.IsNullOrWhiteSpace(_adminLoadError))
         {
             <div class="alert alert-warning">@_adminLoadError</div>
         }
 
+        @* Layout:
+           Four statistic cards showing customer/admin counts and project usage totals. *@
         <div class="row g-3 mb-3">
             <div class="col-12 col-md-3">
                 <div class="card h-100">
@@ -70,6 +88,9 @@
             </div>
         </div>
 
+        @* Layout:
+           Usage chart card for admins.
+           The SVG line chart shows users created, garments added, and outfits saved over the last 14 days. *@
         <div class="card mb-3">
             <div class="card-body">
                 <div class="fw-bold mb-2">Usage chart (last @_chartDays days)</div>
@@ -130,7 +151,7 @@
                             }
                             @foreach (var point in _garmentsChartPoints)
                             {
-                                var isActive = point.Index == ActiveUsageIndex;
+                                var isActive = point.Index == ActiveUsageIndex; 
                                 <circle cx="@point.X"
                                         cy="@point.Y"
                                         r="@(isActive ? 5.2 : 3.8)"
@@ -188,6 +209,8 @@
             </div>
         </div>
 
+        @* Layout:
+           Daily usage table gives the same chart data in a row-by-row format. *@
         <div class="card">
             <div class="card-body">
                 <div class="fw-bold mb-2">Daily usage</div>
@@ -220,6 +243,9 @@
 }
 else
 {
+    @* Layout:
+       Public/customer landing surface.
+       The navigation and CTA buttons send signed-out users to register/login before they can use closet and outfit features. *@
     <div class="landing-root">
         <header class="landing-nav glass-panel reveal-in">
             <a class="landing-brand" href="#top">Access Surface</a>
@@ -239,6 +265,8 @@ else
             }
         </header>
 
+        @* Layout:
+           Hero section explaining the product and showing Get Access/Login buttons when no user is signed in. *@
         <section id="top" class="landing-hero glass-panel reveal-in">
             <p class="landing-eyebrow">Precision Recommendations</p>
             <h1>One intelligent surface for access, guidance, and execution.</h1>
@@ -262,6 +290,8 @@ else
             }
         </section>
 
+        @* Layout:
+           Informational section only; it does not call the database or change project data. *@
         <section id="about" class="landing-section glass-panel reveal-in">
             <h2>About</h2>
             <p>
@@ -270,6 +300,8 @@ else
             </p>
         </section>
 
+        @* Layout:
+           Explains the recommendation model concept to users before they enter the app. *@
         <section id="model" class="landing-section glass-panel reveal-in">
             <h2>The model we use</h2>
             <p>
@@ -278,6 +310,8 @@ else
             </p>
         </section>
 
+        @* Layout:
+           Three-step explanation cards for authentication, navigation, and recommendation usage. *@
         <section id="how" class="landing-section glass-panel reveal-in">
             <h2>How it works</h2>
             <div class="how-grid">
@@ -302,14 +336,17 @@ else
 }
 
 @code {
+    // Current user decides whether the page renders customer home or admin dashboard.
     private User? _currentUser;
     private string _adminLoadError = string.Empty;
 
+    // Admin dashboard summary counts.
     private int _customerCount;
     private int _adminCount;
     private int _customerGarmentCount;
     private int _savedOutfitCount;
 
+    // Chart layout constants and state for the admin usage graph.
     private const int _chartDays = 14;
     private const double ChartXMin = 50d;
     private const double ChartXMax = 730d;
@@ -331,6 +368,8 @@ else
         ? (ChartXMax - ChartXMin) / (_usage.Count - 1)
         : 56d;
 
+    // Picks the currently focused chart point.
+    // Hover wins over selected point, and the newest day is used by default.
     private int ActiveUsageIndex
     {
         get
@@ -343,15 +382,18 @@ else
         }
     }
 
+    // The details panel reads this point to show exact values for the selected/hovered day.
     private UsagePoint? ActiveUsagePoint =>
         ActiveUsageIndex >= 0 && ActiveUsageIndex < _usage.Count
             ? _usage[ActiveUsageIndex]
             : null;
 
+    // Determines whether the page renders admin dashboard or customer/public landing layout.
     private bool IsAdmin =>
         _currentUser?.Role?.Equals("admin", StringComparison.OrdinalIgnoreCase) == true;
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // Function role:
+    // Loads auth state after first render, then loads admin statistics when needed.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -364,7 +406,8 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    // הסבר: פונקציית טעינה. טוענת נתונים/קונפיג/משאבים לפני שימוש בשלבים הבאים.
+    // Function role:
+    // Reads dashboard counts from UserDB/GarmentDB/OutfitDB for the admin home.
     private async Task LoadAdminDashboardAsync()
     {
         _adminLoadError = string.Empty;
@@ -390,7 +433,8 @@ else
         }
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // Function role:
+    // Combines daily DB counts into one timeline used by the chart and table.
     private void BuildUsagePoints(
         Dictionary<DateTime, int> usersByDay,
         Dictionary<DateTime, int> garmentsByDay,
@@ -423,7 +467,8 @@ else
         _hoveredUsageIndex = -1;
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // Function role:
+    // Converts count values into SVG coordinates for one chart line.
     private static List<ChartPoint> BuildChartPoints(
         IReadOnlyList<UsagePoint> points,
         Func<UsagePoint, int> selector,
@@ -447,7 +492,8 @@ else
         return list;
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // Function role:
+    // Formats SVG polyline points from chart coordinates.
     private static string BuildLinePoints(IReadOnlyList<ChartPoint> points)
     {
         if (points.Count == 0)
@@ -458,7 +504,8 @@ else
             $"{x.X.ToString("0.##", culture)},{x.Y.ToString("0.##", culture)}"));
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // Function role:
+    // Builds horizontal grid/tick positions for the usage chart scale.
     private static List<AxisTick> BuildAxisTicks(int maxValue, int sections)
     {
         var safeMax = Math.Max(1, maxValue);
@@ -475,32 +522,32 @@ else
         return ticks;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // Stores the clicked chart point so the details panel stays on that day.
     private void SelectUsagePoint(int index)
     {
         _selectedUsageIndex = Math.Clamp(index, 0, Math.Max(0, _usage.Count - 1));
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // Temporarily focuses a chart point while the mouse is over it.
     private void HoverUsagePoint(int index)
     {
         _hoveredUsageIndex = Math.Clamp(index, 0, Math.Max(0, _usage.Count - 1));
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // Removes hover focus when leaving the chart so selected/default point is shown again.
     private void ClearUsageHover()
     {
         _hoveredUsageIndex = -1;
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // One row/day of dashboard usage data shown in both chart and table.
     private readonly record struct UsagePoint(
         DateTime Day,
         int UsersCreated,
         int GarmentsAdded,
         int OutfitsSaved);
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // SVG coordinate for one value on one line in the admin chart.
     private readonly record struct ChartPoint(
         int Index,
         DateTime Day,
@@ -508,7 +555,7 @@ else
         double X,
         double Y);
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // Horizontal grid/tick position for the admin chart y-axis.
     private readonly record struct AxisTick(
         double Y,
         int Value);

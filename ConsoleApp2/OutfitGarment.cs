@@ -1,35 +1,30 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
 
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשכבט הדיבי, לשירותים ולדפי התצוגה.
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+// SEARCH INDEX
+// MODEL, OUTFIT, GARMENT, LINK, RELATION, ROLE, MATCH
+//
+// Topic: OUTFIT GARMENT LINK MODEL
+// Purpose: Represents one relation between a saved outfit and one garment.
+// Search keywords: MODEL OUTFIT GARMENT LINK RELATION ROLE MATCH
+// When to use it: Show this when explaining how one outfit connects to shirt/pants/shoes.
+// Important notes: Three rows normally belong to one saved outfit.
 
-
-
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
 using System;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace Models
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // SECTION: OUTFIT GARMENT LINK DATA SHAPE
+    // Topic: OutfitGarment data model
+    // Purpose: Holds relation metadata for outfit_id + garment_id + role.
+    // Search keywords: MODEL LINK OUTFIT GARMENT ROLE
+    // When to use it: Use when tracing MatchingService save into outfit_garments table.
+    // Important notes: Role should normalize to shirt, pants, or shoes.
     public class OutfitGarment
     {
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string OutfitGarmentId { get; set; } = string.Empty;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string OutfitId { get; set; } = string.Empty;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string GarmentId { get; set; } = string.Empty;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string GarmentType { get; set; } = string.Empty;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public bool IsSeed { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public DateTime CreatedAt { get; set; }
     }
 }

@@ -1,28 +1,30 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// מה הקובץ עושה: הקובץ שיך לאפליקציית המובייל ומגדיר מסך, אתחול או התאמה לפלטפורמה.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לפרויקט האטר, להגדרי המובייל, לדף הראוי ולכטובת השרת.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים בדף הראוי של המובייל ובקוד שמוחליט לאיזה כטובת שרת להתחבר.
 
 
 
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+
 using Microsoft.Extensions.Logging;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace gadifff.Mobile;
 
-// הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+// SEARCH INDEX
+// MAUI, MOBILE, STARTUP, ANDROID, APP, CONFIG
+//
+// Topic: MAUI APP STARTUP
+// Purpose: Creates the MAUI application object, registers the root App class, fonts, and debug logging.
+// Search keywords: MAUI MOBILE STARTUP ANDROID APP CONFIG
+// When to use it: Show this first when explaining how the MAUI app starts before any API call happens.
+// Important notes: Android MainApplication calls CreateMauiApp(), then App creates MainPage.
 public static class MauiProgram
 {
-	// הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+	// Topic: MAUI app builder
+	// Purpose: Builds the native MAUI app and connects it to App.xaml/App.xaml.cs.
+	// Search keywords: MAUI STARTUP APP ANDROID FONT DEBUG
+	// When to use it: Use when explaining the first startup step of the mobile project.
+	// Important notes: This does not call gadifff API directly; it only prepares the mobile app runtime.
+	// FLOW_MAUI_STARTUP_02: MauiProgram.CreateMauiApp registers App as the root MAUI application.
+	// This file is involved because Android startup must create a MauiApp; next step is App.CreateWindow opening MainPage.
 	public static MauiApp CreateMauiApp()
 	{
-		// יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
@@ -36,7 +38,6 @@ public static class MauiProgram
 		builder.Logging.AddDebug();
 #endif
 
-		// החזרת התוצאה אל הקוד שקרא לפעולה.
 		return builder.Build();
 	}
 }

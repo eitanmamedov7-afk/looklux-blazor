@@ -1,32 +1,34 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// מה הקובץ עושה: הקובץ שיך לאפליקציית המובייל ומגדיר מסך, אתחול או התאמה לפלטפורמה.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לפרויקט האטר, להגדרי המובייל, לדף הראוי ולכטובת השרת.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים בדף הראוי של המובייל ובקוד שמוחליט לאיזה כטובת שרת להתחבר.
 
 
 
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+
 using Android.App;
 using Android.Runtime;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace gadifff.Mobile;
 
+// SEARCH INDEX
+// ANDROID, MAUI, MOBILE, STARTUP, APP
+//
+// Topic: ANDROID APPLICATION ENTRY
+// Purpose: Android creates this application object, then asks MauiProgram to build the MAUI app.
+// Search keywords: ANDROID MAUI MOBILE STARTUP APP
+// When to use it: Show this as the first Android-specific startup file.
+// Important notes: This is used because the project targets net9.0-android.
 [Application]
-// הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
 public class MainApplication : MauiApplication
 {
-	// הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
 	public MainApplication(IntPtr handle, JniHandleOwnership ownership)
 		: base(handle, ownership)
 	{
 	}
 
-	// הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+	// Topic: Android to MAUI bridge
+	// Purpose: Hands Android startup over to the shared MAUI startup builder.
+	// Search keywords: ANDROID MAUI STARTUP APP
+	// When to use it: Use when tracing app launch from Android into shared MAUI code.
+	// Important notes: Next file in the startup flow is MauiProgram.cs.
+	// FLOW_MAUI_STARTUP_01: Android MainApplication calls MauiProgram.CreateMauiApp.
+	// This file is involved because Android starts here; next step is MauiProgram building the MAUI app.
 	protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }

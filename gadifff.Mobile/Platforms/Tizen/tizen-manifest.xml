@@ -1,45 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <manifest package="maui-application-id-placeholder" version="0.0.0" api-version="9" xmlns="http://tizen.org/ns/packages">
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <profile name="common" />
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <ui-application appid="maui-application-id-placeholder" exec="gadifff.Mobile.dll" multiple="false" nodisplay="false" taskmanage="true" type="dotnet" launch_mode="single">
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <label>maui-application-title-placeholder</label>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <icon>maui-appicon-placeholder</icon>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <metadata key="http://tizen.org/metadata/prefer_dotnet_aot" value="true" />
   </ui-application>
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <shortcut-list />
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <privileges>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <privilege>http://tizen.org/privilege/internet</privilege>
   </privileges>
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <dependencies />
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <provides-appdefined-privileges />
 </manifest>

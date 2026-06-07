@@ -1,33 +1,21 @@
-@* מה הקובץ עושה: הקובץ מציג מסך או רכיב בלייזור ומחבר בין התצוגה שעל המסך לבין אזור הקוד. *@
-@* למה הקובץ נדרש: הוא נדרש כדי שהמשתמש יוכל לבצע פעולה או לראות מידע כחלק מהאתר. *@
-@* לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשירותים, למודלים, לניווט ולשכבת הדיבי דרך ההזרקות ואזור הקוד. *@
-@* איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים באזור הקוד שבתחתית הקובץ ובשירותים או במחלקות הדיבי שנקראים ממנו. *@
 
-@*
-*@
-
-
-
-
-
-
-
-@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @page "/Error"
 
-@* ייבוא מרחו שמות שמאפשר לדף להשתמש במודלם, שירותים או כלים נוספים. *@
 @using System.Diagnostics
 
 
-@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 <PageTitle>Error</PageTitle>
 
+@* Role in project:
+   Generic Blazor error page for unhandled server-side UI errors.
+   It helps debugging by showing the request id without exposing production exception details. *@
+@* Layout:
+   Shows a simple error message and the request id so the problem can be matched with server logs. *@
 <div class="page-shell">
     <h1>Error</h1>
     <h2 class="text-muted">An error occurred while processing your request.</h2>
 
 
-    @* בדיקת תנאי שקובעת איזה מסלול בקוד יפעל לפי המצב הנוכחי. *@
     @if (ShowRequestId)
     {
         <p>
@@ -47,17 +35,17 @@
 
 
 
-@* חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד. *@
 @code{
+    // Cascaded request context lets the page show a trace id for logs/debugging.
     [CascadingParameter]
-    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
     private HttpContext? HttpContext { get; set; }
 
-    // חלק תצוגה שמציג נתון או רכיב למשתמש ומתחבר למשתנים ולפעולות באזור הקוד.
+    // Request id is copied from Activity/HttpContext so the error can be matched to server logs.
     private string? RequestId { get; set; }
+    // Controls whether the request id block appears in the error page layout.
     private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
-    // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+    // Copies the current request trace id for display on the error page.
     protected override void OnInitialized() =>
         RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
 }

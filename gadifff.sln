@@ -1,10 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.14.36705.20
 MinimumVisualStudioVersion = 10.0.40219.1
-# מה הקובץ עושה: הקובץ מרכז את הפרויקטים שנפתחים יחד בסביבת הפיתוח.
-# למה הקובץ נדרש: הוא נדרש כדי לבנות את כל חלקי המערכת בפעולה אחת.
-# לאילו חלקים בפרויקט הוא מתחבר: הוא מחבר בין אתר הבלייזור, שכבת הדיבי, המודלים והאפליקציה הניידת.
-# איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצי הפרויקט שמופיעים ברשימת הפרויקטים למטה.
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gadifff", "gadifff\gadifff.csproj", "{D9DE467E-0E13-4749-A669-B6B0DE0A6E41}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBL", "ConsoleApp1\DBL.csproj", "{135261AD-B167-4A07-810E-EEA6551B88D4}"

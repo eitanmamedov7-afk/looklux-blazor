@@ -1,133 +1,93 @@
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <Project Sdk="Microsoft.NET.Sdk">
 
 
-	<!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
 	<PropertyGroup>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<TargetFrameworks>net9.0-android</TargetFrameworks>
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <OutputType>Exe</OutputType>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<RootNamespace>gadifff.Mobile</RootNamespace>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<UseMaui>true</UseMaui>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SingleProject>true</SingleProject>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<ImplicitUsings>enable</ImplicitUsings>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<Nullable>enable</Nullable>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <ApplicationTitle>gadifff.Mobile</ApplicationTitle>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <ApplicationId>com.companyname.gadifff.mobile</ApplicationId>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<ApplicationVersion>1</ApplicationVersion>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <WindowsPackageType>None</WindowsPackageType>
 
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' and Exists('$(UserProfile)\AppData\Local\Android\Sdk')">$(UserProfile)\AppData\Local\Android\Sdk</AndroidSdkDirectory>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and '$(JAVA_HOME)' != ''">$(JAVA_HOME)</JavaSdkDirectory>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and Exists('C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot')">C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot</JavaSdkDirectory>
 	</PropertyGroup>
 
 
-	<!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
 	<ItemGroup>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <MauiImage Include="Resources\Images\*" />
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <MauiFont Include="Resources\Fonts\*" />
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
 
-	<!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
 	<ItemGroup>
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 	</ItemGroup>
 
 
-	<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 	<Target Name="EnsureAndroidDevConnectivity"
 	        BeforeTargets="_GetPrimaryCpuAbi"
 	        Condition="'$(TargetFramework)' == 'net9.0-android' and $([MSBuild]::IsOSPlatform('windows')) and '$(ALLOW_GADIFFF_MOBILE_BUILD)' == '1'">
 
-		<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\ensure-mobile-dev-prereqs.ps1&quot;"
 		      IgnoreExitCode="true" />
 	</Target>

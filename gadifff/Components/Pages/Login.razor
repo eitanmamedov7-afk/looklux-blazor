@@ -1,6 +1,15 @@
 ﻿@page "/login"
 @rendermode InteractiveServer
 
+@* SEARCH INDEX
+   LOGIN, AUTH, VALIDATE, COOKIE, USER, FORM, NAVIGATION
+
+   Topic: WEB LOGIN PAGE
+   Purpose: Collects email/password and calls AuthService.LoginAsync.
+   Search keywords: LOGIN AUTH VALIDATE COOKIE USER FORM NAVIGATION
+   When to use it: Show this when explaining the browser login flow.
+   Important notes: This page starts web auth; the MAUI login flow uses Program.cs API endpoints instead. *@
+
 @using System.ComponentModel.DataAnnotations
 @using gadifff.Services
 
@@ -12,6 +21,9 @@
 @* Role in project:
    This is the entry page for user authentication.
    Success here unlocks the rest of the product flow (closet, filters, matcher, saved outfits). *@
+@* Layout:
+   Centered sign-in card with email/password inputs, submit button, register navigation, and forgot-password link.
+   This is the first screen a signed-out web user uses before reaching closet/outfit pages. *@
 <div class="page-shell">
     <div class="row justify-content-center mt-1">
         <div class="col-md-6 col-lg-5">
@@ -27,6 +39,7 @@
             <EditForm Model="_model"
                       OnValidSubmit="HandleLoginAsync"
                       FormName="login">
+                @* FLOW_LOGIN_WEB_01: User submits the Sign in form; next step is HandleLoginAsync in this file. *@
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -56,11 +69,15 @@
 </div>
 
 @code {
+    // Form state used by the login layout above.
+    // _message/_isError control the success/error alert shown above the form.
     private LoginModel _model = new();
     private string _message = string.Empty;
     private bool _isError;
 
     // Function role:
+    // FLOW_LOGIN_WEB_02: HandleLoginAsync sends the form email/password to AuthService.LoginAsync.
+    // This page is involved because the web login starts from this form; next step is AuthService validating credentials.
     // Sends credentials to AuthService (AuthService.LoginAsync).
     // On success: redirects to home where closet/filter/recommendation flows are available.
     // On failure: keeps user on this page with an explicit error.

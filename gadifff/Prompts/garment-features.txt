@@ -19,6 +19,9 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact shape:
 Rules:
 - If uncertain, keep fields null or empty string.
 - Keep "type" limited to shirt, pants, shoes, or empty string.
+- Keep "style_category" limited to casual, smart_casual, formal, sporty, streetwear, or null.
+- Keep "season" limited to summer, winter, transitional, all, or null.
+- Keep "occasion" limited to gym, work, date, daily, event, or null.
 - Keep "formality_level" as integer 1-5 only, otherwise null.
 - Keep "style_tags" concise and fashion-focused.
 - Output JSON only.

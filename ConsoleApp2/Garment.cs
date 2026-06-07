@@ -1,76 +1,59 @@
-/// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
 
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לשכבט הדיבי, לשירותים ולדפי התצוגה.
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+// SEARCH INDEX
+// MODEL, GARMENT, CLOSET, IMAGE, UPLOAD, FILTER, MATCH, AI, SHA256
+//
+// Topic: GARMENT MODEL
+// Purpose: Represents one closet item, including image data and AI-extracted features.
+// Search keywords: MODEL GARMENT CLOSET IMAGE UPLOAD FILTER MATCH AI SHA256
+// When to use it: Show this when explaining what data a garment stores after upload.
+// Important notes: Current schema stores one image directly on the garment row.
 
-
-
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace Models
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // SECTION: GARMENT DATA SHAPE
+    // Topic: Garment data model
+    // Purpose: Holds closet item fields used by upload, filtering, image display, and matching.
+    // Search keywords: MODEL GARMENT IMAGE FEATURE FILTER MATCH
+    // When to use it: Use when tracing a garment from DB to closet card/API response.
+    // Important notes: Type should normalize into shirt, pants, or shoes for matching.
     public class Garment
     {
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string GarmentId { get; set; } = string.Empty;
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string OwnerUserId { get; set; } = string.Empty;
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string Type { get; set; } = string.Empty;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Color { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? ColorSecondary { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Pattern { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? StyleCategory { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Season { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Occasion { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public int? FormalityLevel { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? StyleTags { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Fit { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Material { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Sleeve { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Length { get; set; }
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? Brand { get; set; }
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-        public string? ImageUrl { get; set; }
-
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public string? FeatureJson { get; set; }
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-        public string GarmentHash { get; set; } = string.Empty;
+        [JsonIgnore]
+        public byte[]? ImageBytes { get; set; }
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
+        public string ImageMimeType { get; set; } = "image/jpeg";
+
+        public string Sha256 { get; set; } = string.Empty;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        // קריאה לשכבת הדיבי כדי לשלוף, לשמור, לעדכן או למחוק מידע ששייך למשתמש.
-        public DateTime? UpdatedAt { get; set; }
     }
 }

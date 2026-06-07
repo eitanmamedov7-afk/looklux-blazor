@@ -204,9 +204,9 @@ main {
     z-index: 2100;
     display: none;
     pointer-events: none;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: clamp(12px, 3vw, 28px);
+    padding: calc(env(safe-area-inset-top) + clamp(16px, 7vh, 72px)) clamp(12px, 3vw, 28px) clamp(12px, 3vw, 28px);
 }
 
 .filter-drawer-shell.is-open {
@@ -240,7 +240,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transform: translateY(16px) scale(0.985);
+    transform: translateY(-10px) scale(0.985);
     opacity: 0;
     transition: transform var(--anim-mid) ease, opacity var(--anim-mid) ease, box-shadow var(--anim-mid) ease;
     overflow-y: auto;

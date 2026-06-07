@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
@@ -15,10 +10,8 @@
              ios:Page.UseSafeArea="True"
              BackgroundColor="#0B0B0D">
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Grid>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <WebView x:Name="AppWebView"
                  HorizontalOptions="FillAndExpand"
                  VerticalOptions="FillAndExpand"
@@ -26,35 +19,29 @@
                  Navigated="OnWebViewNavigated" />
 
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Grid x:Name="Overlay"
               IsVisible="False"
               BackgroundColor="#C00B0B0D"
               Padding="24">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <ScrollView>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VerticalStackLayout HorizontalOptions="FillAndExpand"
                                      VerticalOptions="Center"
                                      Spacing="10"
                                       MaximumWidthRequest="560">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <ActivityIndicator x:Name="LoadingIndicator"
                                        IsVisible="False"
                                        IsRunning="False"
                                        Color="#FFFFFF"
                                        HorizontalOptions="Center" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <Label x:Name="OverlayMessage"
                            TextColor="#F2F2F2"
                            LineBreakMode="WordWrap"
                            HorizontalTextAlignment="Center" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <Entry x:Name="ServerUrlEntry"
                            Placeholder="Server URL (example: http://192.168.1.33:7166)"
                            Keyboard="Url"
@@ -64,14 +51,12 @@
                            PlaceholderColor="#B8B8B8"
                            BackgroundColor="#1E1E22" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <Button x:Name="SaveServerUrlButton"
                             Text="Save URL &amp; Retry"
                             IsVisible="False"
                             Clicked="OnSaveServerUrlClicked"
                             HorizontalOptions="FillAndExpand" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <Button x:Name="RetryButton"
                             Text="Retry"
                             IsVisible="False"

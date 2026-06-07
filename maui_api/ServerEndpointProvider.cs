@@ -1,11 +1,28 @@
+// SEARCH INDEX
+// MAUI, MOBILE, SERVER, API, URL, ANDROID, EMULATOR, CONFIG
+//
+// Topic: MAUI SERVER ENDPOINT PROVIDER
+// Purpose: Chooses and saves the backend API URL used by the MAUI app.
+// Search keywords: MAUI MOBILE SERVER API URL ANDROID EMULATOR CONFIG
+// When to use it: Show this when explaining why Android emulator uses http://10.0.2.2:7166.
+// Important notes: It never calls the API; it only prepares candidate URLs for LookLuxApiClient.
+
 namespace gadifff.Mobile;
 
 internal static class ServerEndpointProvider
 {
+    // SECTION: SERVER URL CONFIG
+    // Topic: Mobile backend URL selection
+    // Purpose: Handles platform-specific API base URLs and saved custom URLs.
+    // Search keywords: SERVER URL API ANDROID EMULATOR CONFIG
+    // When to use it: Use when emulator connection issues happen.
+    // Important notes: 10.0.2.2 is Android emulator's address for the host machine.
     private const string DefaultPort = "7166";
     private const string LegacyPort = "7164";
     private const string UrlPreferenceKey = "server_url";
 
+    // FLOW_MAUI_SERVER_CONNECT_01: GetDefaultUrl chooses http://10.0.2.2:7166 for Android emulator backend access.
+    // This file is involved because the emulator cannot use localhost to reach the PC; next step is startup candidate building.
     public static string GetDefaultUrl()
     {
 #if ANDROID
@@ -21,6 +38,8 @@ internal static class ServerEndpointProvider
 #endif
     }
 
+    // FLOW_MAUI_SERVER_CONNECT_02: GetStartupCandidates builds saved/default/fallback backend URLs for MainPage.
+    // This file is involved because MAUI must know where gadifff API is running; next step is MainPage.SetApiServer.
     public static IReadOnlyList<Uri> GetStartupCandidates()
     {
         var candidates = new List<Uri>();
@@ -86,7 +105,7 @@ internal static class ServerEndpointProvider
             {
                 Port = int.Parse(DefaultPort)
             };
-            return builder.Uri;
+            uri = builder.Uri;
         }
 
         return uri;

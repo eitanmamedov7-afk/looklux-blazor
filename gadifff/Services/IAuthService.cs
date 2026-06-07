@@ -1,36 +1,31 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לדפי בלייזור, למודלם, לדיבי ולשירותים נוספים.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים בדפים שמזריקים את השירות ובקבצי הדיבי שהשירות קורא להם.
 
 
 
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
+
 using System;
 using System.Threading.Tasks;
 using Models;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace gadifff.Services
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // Contract for authentication/account actions used by pages and mobile endpoints.
+    // AuthService implements this so UI code depends on a simple interface instead of concrete logic.
     public interface IAuthService
     {
+        // UI components subscribe to this so nav/page state refreshes after login/logout.
         event Action? AuthStateChanged;
 
+        // Sign-in, sign-out, and registration actions used by Login/Register/Logout pages.
         Task<bool> LoginAsync(string email, string password);
         Task LogoutAsync();
 
         Task<bool> RegisterAsync(string fullName, string email, string password, string role);
 
+        // Forgot/reset password actions used by web pages and the MAUI mobile API.
         Task<PasswordResetEmailStatus> SendPasswordResetEmailAsync(string email, string originBaseUrl);
         Task<bool> ResetPasswordAsync(string token, string newPassword);
 
+        // Resolves the active user so protected pages know which closet/outfits to load.
         Task<User?> CurrentUserAsync();
     }
 }

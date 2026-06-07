@@ -8,9 +8,9 @@ Output must be either:
     {
       "index": 0,
       "score": 0,
-      "style_label": "short style label",
+      "style_label": "casual|smart_casual|formal|sporty|streetwear",
       "explanation": "1-3 sentences describing why the pieces work together",
-      "recommended_places": ["place or occasion", "place or occasion"]
+      "recommended_places": ["daily|work|gym|date|event"]
     }
   ]
 }
@@ -27,7 +27,7 @@ Rules:
 - Do not return duplicate combinations.
 - results must be sorted best-to-worst.
 - score must be integer 0-100.
-- style_label should be concise and realistic (e.g., sporty casual, smart casual, minimal street).
-- recommended_places must be an array with 1-4 short strings.
+- style_label must be exactly one of: casual, smart_casual, formal, sporty, streetwear.
+- recommended_places must be an array with 1-4 values chosen only from: daily, work, gym, date, event.
 - Use garment attributes (color, color_secondary, pattern, style_category, season, occasion, formality_level, style_tags, fit, material, sleeve, length, brand) to decide.
 - Output JSON only.

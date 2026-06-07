@@ -1,119 +1,83 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <?xaml-comp compile="true" ?>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="ActivityIndicator">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="IndicatorView">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="IndicatorColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="SelectedIndicatorColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray100}}"/>
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Border">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="StrokeShape" Value="Rectangle"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="StrokeThickness" Value="1"/>
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="BoxView">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Button">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BorderWidth" Value="0"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="CornerRadius" Value="8"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Padding" Value="14,10"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="PointerOver" />
                 </VisualStateGroup>
             </VisualStateGroupList>
@@ -121,37 +85,26 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="CheckBox">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -161,46 +114,32 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="DatePicker">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -210,49 +149,34 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Editor">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -262,49 +186,34 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Entry">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -314,51 +223,36 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="ImageButton">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Opacity" Value="1" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BorderColor" Value="Transparent"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BorderWidth" Value="0"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="CornerRadius" Value="0"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="Opacity" Value="0.5" />
                         </VisualState.Setters>
                     </VisualState>
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="PointerOver" />
                 </VisualStateGroup>
             </VisualStateGroupList>
@@ -366,40 +260,28 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Label">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -409,97 +291,68 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Label" x:Key="Headline">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="32" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="HorizontalOptions" Value="Center" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="HorizontalTextAlignment" Value="Center" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Label" x:Key="SubHeadline">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="24" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="HorizontalOptions" Value="Center" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="HorizontalTextAlignment" Value="Center" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="ListView">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="SeparatorColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="RefreshControlColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Picker">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TitleColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TitleColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -509,31 +362,22 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="ProgressBar">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="ProgressColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="ProgressColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -543,46 +387,32 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="RadioButton">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -592,63 +422,44 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="RefreshView">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="RefreshColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="SearchBar">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="CancelButtonColor" Value="{StaticResource Gray500}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -658,46 +469,32 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="SearchHandler">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -707,60 +504,42 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Shadow">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Radius" Value="15" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Opacity" Value="0.5" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Brush" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Offset" Value="10,10" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Slider">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumTrackColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MaximumTrackColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="MinimumTrackColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="MaximumTrackColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
                         </VisualState.Setters>
                     </VisualState>
@@ -770,70 +549,50 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="SwipeItem">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Switch">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="ThumbColor" Value="{StaticResource White}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="On">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray200}}" />
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
                         </VisualState.Setters>
                     </VisualState>
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Off">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -843,46 +602,32 @@
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="TimePicker">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="Transparent"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="FontSize" Value="14"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumHeightRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="MinimumWidthRequest" Value="44"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="VisualStateManager.VisualStateGroups">
 
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
             <VisualStateGroupList>
 
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                 <VisualStateGroup x:Name="CommonStates">
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Normal" />
 
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                     <VisualState x:Name="Disabled">
 
-                        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                         <VisualState.Setters>
 
-                            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
                         </VisualState.Setters>
                     </VisualState>
@@ -891,79 +636,56 @@
         </Setter>
     </Style>
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <Style TargetType="Page" ApplyToDerivedTypes="True">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Padding" Value="0"/>
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="Shell" ApplyToDerivedTypes="True">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.ForegroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource SecondaryDarkText}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.TitleColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource SecondaryDarkText}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.DisabledColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray950}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.UnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray200}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.NavBarHasShadow" Value="False" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="NavigationPage">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="IconColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource White}}" />
     </Style>
 
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Style TargetType="TabbedPage">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray950}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="UnselectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray950}}" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 

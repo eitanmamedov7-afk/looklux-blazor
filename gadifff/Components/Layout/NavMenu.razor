@@ -1,10 +1,23 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
-@rendermode InteractiveServer
+﻿@rendermode InteractiveServer
+
+@* SEARCH INDEX
+   NAVIGATION, LOGIN, LOGOUT, COOKIE, DELETE, ACCOUNT, USER, ADMIN, AUTH
+
+   Topic: SHARED NAVIGATION MENU
+   Purpose: Shows links based on auth role, logs out users, and handles delete-account confirmation.
+   Search keywords: NAVIGATION LOGIN LOGOUT COOKIE DELETE ACCOUNT USER ADMIN AUTH
+   When to use it: Show this when explaining web navigation, session state, or delete account.
+   Important notes: Delete account removes dependent wardrobe data before deleting the user. *@
 
 @using gadifff.Services
 @using Models
+@using DBL
 
 @inject IAuthService AuthService
+@inject UserDB UserDb
+@inject GarmentDB GarmentDb
+@inject OutfitDB OutfitDb
+@inject OutfitGarmentDB OutfitGarmentDb
 @inject NavigationManager Nav
 
 @implements IDisposable
@@ -58,28 +71,70 @@
                     Logout
                 </a>
             </div>
+
+            <div class="nav-item">
+                <a href="" class="nav-link text-danger"
+                   @onclick="OpenDeleteAccountDialog"
+                   @onclick:preventDefault="true">
+                    Delete account
+                </a>
+            </div>
         }
     </nav>
 </div>
+
+@if (_showDeleteAccountDialog && _currentUser != null)
+{
+    <div class="slot-overlay">
+        <div class="slot-panel confirm-modal">
+            <div class="fw-bold">Delete account</div>
+            <div class="text-muted">
+                This will permanently delete your account, garments, and saved outfits. This cannot be undone.
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_deleteAccountMessage))
+            {
+                <div class="alert @(_deleteAccountIsError ? "alert-warning" : "alert-success") mb-0">
+                    @_deleteAccountMessage
+                </div>
+            }
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="CloseDeleteAccountDialog"
+                        disabled="@_deleteAccountBusy">
+                    Cancel
+                </button>
+                <button class="btn btn-sm btn-danger"
+                        @onclick="DeleteAccountConfirmedAsync"
+                        disabled="@_deleteAccountBusy">
+                    @(_deleteAccountBusy ? "Deleting..." : "Delete account")
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private bool collapseNavMenu = true;
     private User? _currentUser;
     private bool _subscribed;
     private bool _disposed;
+    private bool _showDeleteAccountDialog;
+    private bool _deleteAccountBusy;
+    private bool _deleteAccountIsError;
+    private string _deleteAccountMessage = string.Empty;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private bool IsAdmin =>
         _currentUser?.Role?.Equals("admin", StringComparison.OrdinalIgnoreCase) == true;
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
     protected override Task OnInitializedAsync()
     {
         return Task.CompletedTask;
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -93,7 +148,6 @@
         await RefreshCurrentUserAsync();
     }
 
-    // הסבר: פונקציית טיפול באירוע. מקבלת קלט מה־UI, מבצעת בדיקות, ואז מפעילה את הלוגיקה המתאימה.
     private void HandleAuthChanged()
     {
         _ = RefreshCurrentUserAsync();
@@ -124,13 +178,13 @@
         }
     }
 
-    // הסבר: פונקציית toggle. מחליפה מצב בין פתוח/סגור או פעיל/לא פעיל בממשק.
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
     }
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // FLOW_LOGOUT_WEB_01: User clicks Logout in the nav menu.
+    // This layout is involved because logout is available globally; next step is AuthService.LogoutAsync and navigation home.
     private async Task OnLogoutClicked()
     {
         await AuthService.LogoutAsync();
@@ -138,7 +192,88 @@
         Nav.NavigateTo("/", false);
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // Opens the warning modal before deleting the signed-in account.
+    private void OpenDeleteAccountDialog()
+    {
+        _deleteAccountMessage = string.Empty;
+        _deleteAccountIsError = false;
+        _showDeleteAccountDialog = true;
+    }
+
+    // Closes the account delete modal without changing data.
+    private void CloseDeleteAccountDialog()
+    {
+        if (_deleteAccountBusy)
+            return;
+
+        _showDeleteAccountDialog = false;
+        _deleteAccountMessage = string.Empty;
+        _deleteAccountIsError = false;
+    }
+
+    // Deletes the signed-in user and related wardrobe data after confirmation.
+    // FLOW_DELETE_ACCOUNT_WEB_02: DeleteAccountConfirmedAsync runs after the user confirms account deletion.
+    // This layout is involved because the delete-account button is global; next step is DeleteUserCascadeAsync.
+    private async Task DeleteAccountConfirmedAsync()
+    {
+        if (_currentUser == null || _deleteAccountBusy)
+            return;
+
+        _deleteAccountBusy = true;
+        _deleteAccountMessage = string.Empty;
+        _deleteAccountIsError = false;
+
+        try
+        {
+            if (IsAdmin && await UserDb.CountByRoleAsync("admin") <= 1)
+            {
+                _deleteAccountIsError = true;
+                _deleteAccountMessage = "Cannot delete the last admin account.";
+                return;
+            }
+
+            var deleted = await DeleteUserCascadeAsync(_currentUser.UserId);
+            if (deleted <= 0)
+            {
+                _deleteAccountIsError = true;
+                _deleteAccountMessage = "Could not delete account.";
+                return;
+            }
+
+            await AuthService.LogoutAsync();
+            _currentUser = null;
+            _showDeleteAccountDialog = false;
+            Nav.NavigateTo("/", false);
+        }
+        catch (Exception ex)
+        {
+            _deleteAccountIsError = true;
+            _deleteAccountMessage = $"Delete failed: {ex.Message}";
+        }
+        finally
+        {
+            _deleteAccountBusy = false;
+        }
+    }
+
+    // FLOW_DELETE_ACCOUNT_WEB_03: DeleteUserCascadeAsync deletes outfit links, outfits, and garments before deleting the user.
+    // This layout is involved because web self-delete does cascade cleanup here; next step is UserDB.DeleteUserAsync.
+    private async Task<int> DeleteUserCascadeAsync(string userId)
+    {
+        var outfits = await OutfitDb.GetByUserAsync(userId, 2000);
+        foreach (var outfit in outfits)
+        {
+            await OutfitGarmentDb.DeleteByOutfitIdAsync(outfit.OutfitId);
+            await OutfitDb.DeleteOutfitAsync(outfit.OutfitId);
+        }
+
+        var garments = await GarmentDb.GetByUserAsync(userId);
+        foreach (var garment in garments)
+            await GarmentDb.DeleteGarmentAsync(garment.GarmentId);
+
+        return await UserDb.DeleteUserAsync(userId);
+    }
+
     public void Dispose()
     {
         _disposed = true;

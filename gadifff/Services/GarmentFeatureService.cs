@@ -1,16 +1,13 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
 
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לדפי בלייזור, למודלם, לדיבי ולשירותים נוספים.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים בדפים שמזריקים את השירות ובקבצי הדיבי שהשירות קורא להם.
+// SEARCH INDEX
+// AI, GEMINI, IMAGE, GARMENT, UPLOAD, ANALYZE, JSON, VALIDATE, CONFIG
+//
+// Topic: GARMENT IMAGE ANALYSIS SERVICE
+// Purpose: Sends garment photos to Gemini and returns structured JSON features for saving in garments.
+// Search keywords: AI GEMINI IMAGE GARMENT UPLOAD ANALYZE JSON VALIDATE CONFIG
+// When to use it: Show this when explaining automatic garment type/color/style extraction.
+// Important notes: Used by web upload and mobile upload API before GarmentDB saves the row.
 
-
-
-// ייבוא ספריות שמספקות מחלקות, ממשקים ופעולות שהקובץ צריך כדי לעבוד.
 using System;
 using System.IO;
 using System.Text.Json;
@@ -18,23 +15,26 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
 namespace gadifff.Services
 {
-    // הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+    // SECTION: AI GARMENT FEATURE EXTRACTION
+    // Topic: GarmentFeatureService class
+    // Purpose: Builds the image-analysis prompt and calls GeminiClient.
+    // Search keywords: AI GEMINI IMAGE GARMENT UPLOAD ANALYZE
+    // When to use it: Use when explaining the upload pipeline after the image is selected.
+    // Important notes: The prompt can come from config, prompt file, or built-in fallback.
+    // Service used by Closet upload and the MAUI garment API.
+    // It sends garment images to Gemini and returns normalized JSON features that become Garment table fields.
     public class GarmentFeatureService
     {
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
+        // Config keys let the project use a custom prompt from appsettings/user-secrets instead of hard-coded text.
         public const string PromptConfigKey = "GarmentFeature:ImageAnalysisPrompt";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         public const string PromptFileConfigKey = "GarmentFeature:ImageAnalysisPromptFile";
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         private const string LegacyPromptConfigKey = "Gemini:ImageAnalysisPrompt";
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         private const string DefaultPromptFileRelativePath = "Prompts/garment-features.txt";
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
+        // Built-in fallback prompt keeps upload working in development even if the prompt file is missing.
         private static readonly string BuiltInPrompt = """
 You are a clothing image analyzer.
 Return ONLY valid JSON (no markdown, no explanations) with this exact shape:
@@ -57,18 +57,19 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact shape:
 Rules:
 - If uncertain, keep fields null or empty string.
 - Keep "type" limited to shirt, pants, shoes, or empty string.
+- Keep "style_category" limited to casual, smart_casual, formal, sporty, streetwear, or null.
+- Keep "season" limited to summer, winter, transitional, all, or null.
+- Keep "occasion" limited to gym, work, date, daily, event, or null.
 - Keep "formality_level" as integer 1-5 only, otherwise null.
 - Keep "style_tags" concise and fashion-focused.
 - Output JSON only.
 """;
 
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
+        // Dependencies:
+        // GeminiClient performs the external AI call, config/env decide which prompt is used.
         private readonly GeminiClient _gemini;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         private readonly ILogger<GarmentFeatureService> _logger;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         private readonly IWebHostEnvironment _env;
-        // הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
         private readonly IConfiguration _config;
 
         public GarmentFeatureService(
@@ -83,21 +84,18 @@ Rules:
             _config = config;
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Main image-analysis flow used after a user chooses a garment photo.
+        // Project process affected: garment upload, automatic type detection, and saved garment metadata.
         public async Task<string> ExtractFromImageAsync(byte[] imageBytes, string fileName, string contentType)
         {
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (!_gemini.IsConfigured)
             {
-                // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
                 var msg = "Image analysis is not configured (set GEMINI_API_KEY or Gemini:ApiKey).";
                 _logger.LogError(msg);
                 throw new InvalidOperationException(msg);
             }
 
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var (prompt, source) = await LoadPromptAsync();
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.IsNullOrWhiteSpace(prompt))
             {
                 _logger.LogWarning(
@@ -107,7 +105,6 @@ Rules:
                 throw new InvalidOperationException("Image analysis prompt missing on server.");
             }
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.Equals(source, "built-in", StringComparison.Ordinal))
             {
                 _logger.LogWarning(
@@ -116,28 +113,21 @@ Rules:
                     PromptFileConfigKey);
             }
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var composedPrompt = $"{prompt}\nImageFileName: {fileName}";
-            // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
             var raw = await _gemini.GenerateAsync(composedPrompt, imageBytes, contentType);
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var normalizedRaw = NormalizeJson(raw);
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.IsNullOrWhiteSpace(normalizedRaw))
             {
                 _logger.LogWarning("Gemini returned empty; returning empty json");
                 throw new InvalidOperationException("Image analysis returned no content.");
             }
 
-            // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
             try
             {
                 JsonDocument.Parse(normalizedRaw);
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return normalizedRaw;
             }
-            // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
             catch (Exception ex)
             {
                 _logger.LogError(
@@ -148,95 +138,69 @@ Rules:
             }
         }
 
-        // הגדרת פעולה אסינכרונית שמובצעת מול שירות, דיבי או תצצוגה בלי לחסום את ההרצה.
+        // Loads the prompt in priority order: explicit config, old config key, prompt file, built-in fallback.
+        // This keeps the project configurable without changing code.
         private async Task<(string Prompt, string Source)> LoadPromptAsync()
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var promptFromConfig = _config[PromptConfigKey];
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (!string.IsNullOrWhiteSpace(promptFromConfig))
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return (promptFromConfig, PromptConfigKey);
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var promptFromLegacyConfig = _config[LegacyPromptConfigKey];
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (!string.IsNullOrWhiteSpace(promptFromLegacyConfig))
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return (promptFromLegacyConfig, LegacyPromptConfigKey);
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var promptPath = ResolvePromptPath(_config[PromptFileConfigKey]);
 
-            // ניסיון להריץ פעולה שעלולה להיכשל, כדי שאפשר יהיה לטפל בכשל בצורה מסודרת.
             try
             {
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (File.Exists(promptPath))
                 {
-                    // המתנה לפעולה אסינכרונית כדי להמשיך רק אחרי שהפעולה הסתיימה.
                     var promptText = await File.ReadAllTextAsync(promptPath);
-                    // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                     if (!string.IsNullOrWhiteSpace(promptText))
-                        // החזרת התוצאה אל הקוד שקרא לפעולה.
                         return (promptText, promptPath);
                 }
             }
-            // טיפול בשגיאה כדי להחזיר תוצאה בטוחה במקום קריסה.
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to read garment feature prompt file at {PromptPath}", promptPath);
             }
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return (BuiltInPrompt, "built-in");
         }
 
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // Cleans Gemini output so it can be parsed as JSON even if the model wraps it in markdown fences.
         private static string NormalizeJson(string? raw)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var value = (raw ?? string.Empty).Trim();
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (string.IsNullOrWhiteSpace(value))
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return string.Empty;
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (value.StartsWith("```", StringComparison.Ordinal))
             {
                 value = value.Trim('`').Trim();
-                // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
                 if (value.StartsWith("json", StringComparison.OrdinalIgnoreCase))
                     value = value[4..].Trim();
             }
 
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var first = value.IndexOf('{');
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var last = value.LastIndexOf('}');
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (first >= 0 && last > first)
                 value = value[first..(last + 1)];
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return value.Trim();
         }
 
-        // הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+        // Converts a relative prompt-file setting into a real path under the web project's content root.
         private string ResolvePromptPath(string? configuredPath)
         {
-            // יצירת משתנה מקומי שמכין ערך ביניים להמשך הפעולה.
             var value = string.IsNullOrWhiteSpace(configuredPath)
                 ? DefaultPromptFileRelativePath
                 : configuredPath.Trim();
 
-            // בדיקת תנאי שמוחליטה האם להמשיך, לעהצור או לעבור למסלול אחר.
             if (Path.IsPathRooted(value))
-                // החזרת התוצאה אל הקוד שקרא לפעולה.
                 return value;
 
-            // החזרת התוצאה אל הקוד שקרא לפעולה.
             return Path.Combine(_env.ContentRootPath, value.Replace('/', Path.DirectorySeparatorChar));
         }
     }

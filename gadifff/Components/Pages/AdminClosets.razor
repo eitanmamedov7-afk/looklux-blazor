@@ -1,6 +1,14 @@
-﻿@* זרימת קובץ: רכיב זה מקבל קלט מהמשתמש/מהשירותים, מעדכן מצב פנימי, ומציג תוצאה ברורה במסך. *@
-@page "/admin/closets"
+﻿@page "/admin/closets"
 @rendermode InteractiveServer
+
+@* SEARCH INDEX
+   ADMIN, USER, CUSTOMER, LIST, ADD, UPDATE, REMOVE, VALIDATE, DATABASE
+
+   Topic: ADMIN CUSTOMERS PAGE
+   Purpose: Lets an admin view users and manage customer/admin accounts.
+   Search keywords: ADMIN USER CUSTOMER LIST ADD UPDATE REMOVE VALIDATE DATABASE
+   When to use it: Show this when explaining admin account management.
+   Important notes: Individual customer garments/outfits are viewed in read-only pages; account deletion cascades related data. *@
 
 @using Models
 @using DBL
@@ -16,6 +24,12 @@
 
 <PageTitle>Admin Customers</PageTitle>
 
+@* Role in project:
+   Main admin customer-management page.
+   It affects account creation/edit/delete and opens customer closet/outfit views for support/admin review. *@
+@* Layout:
+   Admin page shell with a header, account creation form, customer cards, inline edit controls, and delete confirmation modal.
+   Every action here changes or opens customer/admin account and wardrobe data. *@
 <div class="page-shell">
     <div class="section-header">
         <div>
@@ -44,6 +58,9 @@
             <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
         }
 
+        @* Layout:
+           Add-account card.
+           The fields create a new customer/admin account; password is hashed in CreateUserAsync before DB insert. *@
         <div class="card mb-3">
             <div class="card-body">
                 <div class="fw-bold mb-2">Add account</div>
@@ -81,6 +98,9 @@
         }
         else
         {
+            @* Layout:
+               Customer/admin account list.
+               Each card shows identity, role, created date, and action buttons for wardrobe view/edit/delete. *@
             <div class="admin-user-list">
                 @foreach (var u in _users)
                 {
@@ -100,6 +120,8 @@
                                 </div>
                             </div>
 
+                            @* Layout:
+                               Inline edit area shown only for the account currently being edited. *@
                             @if (isEditing)
                             {
                                 <div class="admin-edit-grid">
@@ -119,6 +141,8 @@
                                         </select>
                                     </div>
                                 </div>
+                                @* Layout:
+                                   Normal row actions: open wardrobe, edit account, or delete account. *@
                                 <div class="admin-user-actions">
                                     <button class="btn btn-sm btn-primary"
                                             @onclick="() => SaveEditedUserAsync(u)"
@@ -161,6 +185,9 @@
 
 @if (_showDeleteUserDialog && _pendingDeleteUser != null)
 {
+    @* Layout:
+       Delete-account confirmation modal.
+       Confirming deletes this user plus related garments/outfits; cancel closes without changing data. *@
     <div class="slot-overlay">
         <div class="slot-panel confirm-modal">
             <div class="fw-bold">Delete account</div>
@@ -184,6 +211,7 @@
 }
 
 @code {
+    // Page access/loading state.
     private bool _loaded;
     private bool _mustLogin;
     private bool _notAllowed;
@@ -196,6 +224,7 @@
     private bool _showDeleteUserDialog;
     private User? _pendingDeleteUser;
 
+    // Create/edit form state for admin-managed accounts.
     private string _createFullName = string.Empty;
     private string _createEmail = string.Empty;
     private string _createPassword = string.Empty;
@@ -205,7 +234,8 @@
     private string _editFullName = string.Empty;
     private string _editRole = "customer";
 
-    // הסבר: פונקציית אירוע. היא מופעלת מתגובה לפעולה בממשק המשתמש ומעדכנת מצב/תצוגה.
+    // Function role:
+    // Verifies the current user is an admin before loading the customer/admin list.
     protected override async Task OnInitializedAsync()
     {
         try
@@ -235,7 +265,10 @@
         }
     }
 
-    // הסבר: פונקציה זו היא חלק מזרימת הקובץ: קלט -> עיבוד -> תוצאה/עדכון מצב.
+    // Function role:
+    // Reloads all accounts and stores snapshots used to track current row data.
+    // FLOW_ADMIN_USER_MANAGE_WEB_02: ReloadUsersAsync loads all user accounts for the admin list.
+    // This page is involved because admin account management starts here; next step is UserDB.GetAllAsync.
     private async Task ReloadUsersAsync()
     {
         _users = (await UserDb.GetAllAsync())
@@ -248,6 +281,8 @@
             _originalUserSnapshot[user.UserId] = BuildUserSnapshot(user);
     }
 
+    // Function role:
+    // Copies selected user data into the inline edit form.
     private void StartEdit(User user)
     {
         _editingUserId = user.UserId;
@@ -257,6 +292,7 @@
         ClearMessage();
     }
 
+    // Clears the inline edit form and returns the account card to normal action buttons.
     private void CancelEdit()
     {
         _editingUserId = string.Empty;
@@ -265,6 +301,9 @@
         _editRole = "customer";
     }
 
+    // Copies inline edit fields into the selected user and sends the save through SaveUserAsync.
+    // FLOW_ADMIN_USER_MANAGE_WEB_03: SaveEditedUserAsync sends inline edit values to SaveUserAsync.
+    // This page is involved because admin edits happen in this form; next step is UserDB.UpdateUserAsync.
     private async Task SaveEditedUserAsync(User user)
     {
         user.Email = _editEmail;
@@ -276,7 +315,10 @@
             CancelEdit();
     }
 
-    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    // Function role:
+    // Creates a customer/admin account from the admin form and hashes the password before saving.
+    // FLOW_ADMIN_USER_MANAGE_WEB_03A: CreateUserAsync validates admin create form and hashes the password.
+    // This page is involved because admin creates users here; next step is UserDB.CreateAsync.
     private async Task CreateUserAsync()
     {
         if (_busy)
@@ -348,7 +390,8 @@
         }
     }
 
-    // הסבר: פונקציית שמירה/יצירה. כותבת נתונים חדשים למערכת ומחזירה סטטוס הצלחה/כישלון.
+    // Function role:
+    // Saves admin edits while preventing duplicate emails and protecting the last admin account.
     private async Task SaveUserAsync(User user)
     {
         if (_busy)
@@ -426,7 +469,7 @@
         }
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // Opens the confirmation modal for deleting one account.
     private void OpenDeleteUserDialog(User user)
     {
         if (_busy)
@@ -436,14 +479,16 @@
         _showDeleteUserDialog = true;
     }
 
-    // הסבר: פונקציית פתיחה/סגירה. שולטת על חלון/דיאלוג/פאנל כדי לנהל את חוויית המשתמש.
+    // Closes the delete confirmation modal without changing the database.
     private void CloseDeleteUserDialog()
     {
         _showDeleteUserDialog = false;
         _pendingDeleteUser = null;
     }
 
-    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    // Runs the actual delete after the admin confirms the modal.
+    // FLOW_ADMIN_USER_MANAGE_WEB_05: DeleteUserConfirmedAsync runs after admin confirms account deletion.
+    // This page is involved because delete confirmation lives here; next step is dependency cascade then UserDB.DeleteUserAsync.
     private async Task DeleteUserConfirmedAsync()
     {
         if (_pendingDeleteUser == null)
@@ -454,7 +499,8 @@
             CloseDeleteUserDialog();
     }
 
-    // הסבר: פונקציית מחיקה. מסירה נתון קיים ומחזירה תוצאה כדי לאשר שהפעולה הושלמה.
+    // Function role:
+    // Deletes a user and their related wardrobe data in dependency order.
     private async Task DeleteUserAsync(User user)
     {
         if (_busy)
@@ -523,7 +569,7 @@
         }
     }
 
-    // הסבר: פונקציית בדיקה. מחזירה תשובה לוגית/ניסיון פריסה כדי להחליט על המשך הזרימה.
+    // Checks whether the currently edited values differ from the last loaded DB snapshot.
     private bool IsUserDirty(User user)
     {
         if (string.IsNullOrWhiteSpace(user.UserId))
@@ -535,7 +581,7 @@
         return !string.Equals(original, BuildUserSnapshot(user), StringComparison.Ordinal);
     }
 
-    // הסבר: פונקציית בנייה. מרכיבה אובייקט/בקשה/פלט מתוך נתוני קלט לפני השלב הבא בזרימה.
+    // Builds a compact comparison string used by IsUserDirty.
     private static string BuildUserSnapshot(User user)
     {
         var email = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
@@ -544,28 +590,28 @@
         return $"{email}|{fullName}|{role}";
     }
 
-    // הסבר: פונקציית נרמול. מנקה ומאחד פורמט נתונים כדי למנוע חוסר עקביות בהמשך הזרימה.
+    // Keeps role values limited to admin/customer before saving.
     private static string NormalizeRole(string? role)
     {
         var normalized = (role ?? string.Empty).Trim().ToLowerInvariant();
         return normalized == "admin" ? "admin" : "customer";
     }
 
-    // הסבר: פונקציית ניקוי. מאפסת מצב זמני כדי להתחיל פעולה חדשה בצורה נקייה.
+    // Clears the success/error alert above the admin list.
     private void ClearMessage()
     {
         _message = string.Empty;
         _isError = false;
     }
 
-    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    // Shows a success alert after create/update/delete.
     private void SetSuccess(string message)
     {
         _message = message;
         _isError = false;
     }
 
-    // הסבר: פונקציית עדכון מצב. משנה ערכים פנימיים כדי לכוון את זרימת העבודה בקובץ.
+    // Shows an error alert when validation or database work fails.
     private void SetError(string message)
     {
         _message = message;

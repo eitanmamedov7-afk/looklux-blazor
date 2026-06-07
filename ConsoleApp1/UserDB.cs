@@ -1,6 +1,12 @@
 
-
-
+// SEARCH INDEX
+// DATABASE, USER, LOGIN, REGISTER, ADMIN, ADD, UPDATE, REMOVE, COUNT, SEARCH, PASSWORD
+//
+// Topic: USER DATABASE
+// Purpose: Reads/writes user accounts for login, register, admin management, password reset, and dashboard counts.
+// Search keywords: DATABASE USER LOGIN REGISTER ADMIN ADD UPDATE REMOVE COUNT SEARCH PASSWORD
+// When to use it: Show this when explaining any process that checks or changes users.
+// Important notes: PasswordHash is stored here; pages/services should never expose it to clients.
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +16,12 @@ using Models;
 
 namespace DBL
 {
+    // SECTION: USER DATABASE CRUD
+    // Topic: UserDB class
+    // Purpose: Table-specific DB logic for eitan_project12.users.
+    // Search keywords: DATABASE USER LOGIN REGISTER ADMIN COUNT UPDATE REMOVE
+    // When to use it: Use for account lookup, account creation, admin edits, password updates, and dashboard statistics.
+    // Important notes: Inherits generic SQL helpers from BaseDB<User>.
     // Data-access class for application users.
     // UserDB connects the web/auth/admin pages to the eitan_project12.users table.
     // It inherits common SELECT/INSERT/UPDATE/DELETE helpers from BaseDB<User>
@@ -65,6 +77,14 @@ namespace DBL
 
         // Finds users by email.
         // Auth and registration use this to locate an account and to prevent duplicate emails.
+        // FLOW_LOGIN_WEB_04: UserDB.GetByEmailAsync loads the account row needed for web login password verification.
+        // This DB file is involved because users are stored in MySQL; next step is AuthService BCrypt password check.
+        // FLOW_LOGIN_MOBILE_05: UserDB.GetByEmailAsync loads the account row needed for API login password verification.
+        // This DB file is involved because mobile login uses the same users table; next step is Program.cs BCrypt password check.
+        // FLOW_PASSWORD_RESET_WEB_03: UserDB.GetByEmailAsync loads the account before AuthService creates a reset token.
+        // This DB file is involved because reset emails can only be sent for existing accounts; next step is AuthService token/link creation.
+        // FLOW_PASSWORD_RESET_MOBILE_05: UserDB.GetByEmailAsync loads the account for a MAUI-started reset request.
+        // This DB file is involved because the mobile API uses the same users table; next step is AuthService token/link creation.
         public async Task<List<User>> GetByEmailAsync(string email)
         {
             // Email lookup is used during login/register, so it stays parameterized.
@@ -83,6 +103,9 @@ namespace DBL
 
         // Inserts a new user account.
         // Registration/admin-create code prepares the User object, including the already-hashed password.
+        // FLOW_REGISTER_WEB_04 / FLOW_REGISTER_MOBILE_05 / FLOW_ADMIN_USER_MANAGE_WEB_04 / FLOW_ADMIN_USER_MANAGE_MOBILE_05:
+        // UserDB.CreateAsync inserts the prepared user row into MySQL.
+        // This DB file is involved because all account creation ends in the users table; next step is UI/API success response.
         public async Task<int> CreateAsync(User u)
         {
             // Field names match the users table columns that will be inserted.
@@ -126,6 +149,10 @@ namespace DBL
 
         // Replaces a user's password hash.
         // Used by password reset/auth flows after the new password has already been hashed.
+        // FLOW_PASSWORD_RESET_WEB_09: UserDB.UpdatePasswordHashAsync writes the new BCrypt hash after web token validation.
+        // This DB file is involved because only the hash is stored; next step is ResetPassword.razor success/failure message.
+        // FLOW_PASSWORD_RESET_MOBILE_10: UserDB.UpdatePasswordHashAsync writes the same new hash for MAUI-started reset emails.
+        // This DB file is involved because the final password storage is shared; next step is ResetPassword.razor success/failure message.
         public Task<int> UpdatePasswordHashAsync(string userId, string passwordHash)
         {
             // Store only the hash, never the plain password.
@@ -145,6 +172,9 @@ namespace DBL
 
         // Deletes a user row by id.
         // Admin deletion code is responsible for deleting related garments/outfits before calling this.
+        // FLOW_DELETE_ACCOUNT_WEB_06 / FLOW_DELETE_ACCOUNT_MOBILE_06 / FLOW_ADMIN_USER_MANAGE_WEB_07 / FLOW_ADMIN_USER_MANAGE_MOBILE_07:
+        // UserDB.DeleteUserAsync removes the final user row after dependent wardrobe data is deleted.
+        // This DB file is involved because users is the parent account table; final step is logout/API response.
         public Task<int> DeleteUserAsync(string userId)
         {
             // Delete is scoped to one user id.
@@ -157,6 +187,7 @@ namespace DBL
         }
 
         // Counts all users for admin dashboard/statistics.
+        // Dashboard helper: total user count for admin/home/mobile dashboard statistics.
         public async Task<int> CountAllAsync()
         {
             // Dashboard total: one scalar COUNT(*) row.

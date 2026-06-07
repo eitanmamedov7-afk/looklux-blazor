@@ -1,5 +1,14 @@
 ﻿@using Models
 
+@* SEARCH INDEX
+   MATCH, RECOMMENDATION, SLOT, GARMENT, OUTFIT, SAVE, VALIDATE, LIST, SCORE
+
+   Topic: SHARED MATCHER COMPONENT
+   Purpose: Provides the web matcher UI and calls MatchingService to find/save outfit recommendations.
+   Search keywords: MATCH RECOMMENDATION SLOT GARMENT OUTFIT SAVE VALIDATE LIST SCORE
+   When to use it: Show this when explaining the visual recommendation flow in Blazor.
+   Important notes: This is UI orchestration; scoring/saving logic lives in MatchingService. *@
+
 @using gadifff.Services
 
 @using Microsoft.AspNetCore.Hosting
@@ -18,6 +27,9 @@
    This is the recommendation engine UI shown from the Closet page.
    It takes the currently visible garments (after filters), lets the user lock seed items,
    calls MatchingService to score combinations, and lets the user save a suggestion as an outfit. *@
+@* Layout:
+   Full-screen overlay with three garment slots, a Find match button, progress overlay, result cards, save buttons,
+   and blocked/no-match/error messages. Closet.razor and Outfits.razor both open this component. *@
 
 <div class="slot-overlay matcher-overlay">
     <div class="slot-panel matcher-panel">
@@ -30,12 +42,18 @@
             <button class="btn btn-sm btn-outline-secondary" @onclick="Close">Close</button>
         </div>
 
+        @* Layout:
+           Three slot controls for shirt, pants, and shoes.
+           Each slot can cycle garments and optionally lock that piece as a seed. *@
         <div class="slot-controls">
             @RenderSlot("shirt", "Shirt", CurrentShirt, PrevShirt, NextShirt)
             @RenderSlot("pants", "Pants", CurrentPants, PrevPants, NextPants)
             @RenderSlot("shoes", "Shoes", CurrentShoes, PrevShoes, NextShoes)
         </div>
 
+        @* Layout:
+           Main action row.
+           The Find match button starts MatchingService through RunMatch; status text shows current state. *@
         <div class="matcher-actions">
 
             <button class="btn btn-primary" @onclick="RunMatch" disabled="@Running">Find match</button>
@@ -58,6 +76,9 @@
             </div>
         </div>
 
+        @* Layout:
+           Recommendation results.
+           Each card shows score/style/explanation/pieces and lets the user save that suggestion as an outfit. *@
         @if (Suggestions.Count > 0)
         {
             <div class="mt-3 match-results">
@@ -150,10 +171,12 @@
             </div>
         }
 
+        @* Layout:
+           Blocked message when the closet does not meet the 2 shirts / 2 pants / 2 shoes requirement. *@
         @if (_blocked != null)
         {
             <div class="alert alert-warning mt-3">
-                Need at least @_blocked.MinPerTypeRequired of each type. Current:
+                Need at least @_blocked.MinPerTypeRequired shirts, @_blocked.MinPerTypeRequired pants, and @_blocked.MinPerTypeRequired shoes. Current:
                 shirts: @_blocked.Counts.GetValueOrDefault("shirt", 0),
                 pants: @_blocked.Counts.GetValueOrDefault("pants", 0),
                 shoes: @_blocked.Counts.GetValueOrDefault("shoes", 0).
@@ -171,6 +194,8 @@
         }
     </div>
 
+    @* Layout:
+       Progress overlay shown while MatchingService/Gemini scoring is running. *@
     @if (Running)
     {
         <div class="match-loading-overlay">
@@ -209,9 +234,11 @@
         "Done"
     };
 
+    // Slot pools split the incoming closet garments into the three required matcher categories.
     private List<Garment> _shirts = new();
     private List<Garment> _pants = new();
     private List<Garment> _shoes = new();
+    private static readonly string[] RequiredMatcherTypes = { "shirt", "pants", "shoes" };
 
     private int _idxShirt;
     private int _idxPants;
@@ -222,6 +249,7 @@
     private bool LockPants;
     private bool LockShoes;
 
+    // UI execution state for progress, blocked/no-match/error messages, and save feedback.
     private bool Running;
     private string Status = string.Empty;
     private bool _noMatch;
@@ -303,6 +331,8 @@
         if (AutoStart)
             await RunMatch();
     }
+    // Function role:
+    // Detects meaningful parameter changes so the matcher does not reset on every render.
     private string BuildSyncSignature()
     {
         var garmentKey = string.Join("|", Garments
@@ -314,6 +344,8 @@
             .OrderBy(v => v, StringComparer.OrdinalIgnoreCase));
         return $"{UserId}::{AutoStart}::{garmentKey}::{seedKey}";
     }
+    // Function role:
+    // Builds one shirt/pants/shoes slot including preview image, previous/next buttons, and seed checkbox.
     private RenderFragment RenderSlot(string type, string title, Garment? current, Action prevAction, Action nextAction) => builder =>
     {
         var seq = 0;
@@ -425,6 +457,8 @@
         builder.CloseElement();
         builder.CloseElement();
     };
+    // Function role:
+    // Marks a slot as a seed garment and enforces the maximum of two selected seeds.
     private void SetSeed(string type, bool isChecked)
     {
         if (!isChecked)
@@ -443,16 +477,20 @@
         if (string.Equals(type, "pants", StringComparison.OrdinalIgnoreCase)) LockPants = true;
         if (string.Equals(type, "shoes", StringComparison.OrdinalIgnoreCase)) LockShoes = true;
     }
+    // Function role:
+    // Used when matcher opens from a single garment so only that garment type starts locked.
     private void SetExclusiveSeed(string? type)
     {
         LockShirt = string.Equals(type, "shirt", StringComparison.OrdinalIgnoreCase);
         LockPants = string.Equals(type, "pants", StringComparison.OrdinalIgnoreCase);
         LockShoes = string.Equals(type, "shoes", StringComparison.OrdinalIgnoreCase);
     }
+    // Returns whether the shirt/pants/shoes slot is currently locked as a seed.
     private bool IsSeedSelected(string type) =>
         (type == "shirt" && LockShirt) ||
         (type == "pants" && LockPants) ||
         (type == "shoes" && LockShoes);
+    // Counts selected seed slots so the UI can enforce the maximum of two.
     private int SelectedSeedCount()
     {
         var count = 0;
@@ -461,6 +499,8 @@
         if (LockShoes) count++;
         return count;
     }
+    // Function role:
+    // Chooses whether a slot displays the current seed or the primary recommendation result.
     private string? GetDisplayedSlotGarmentId(string type)
     {
         if (PrimaryResult != null)
@@ -479,6 +519,8 @@
             _ => null
         };
     }
+    // Function role:
+    // Moves a slot wheel forward/backward through available garments of that type.
     private void Cycle(string type, int delta)
     {
         switch (type)
@@ -497,19 +539,33 @@
                 break;
         }
     }
+    // Slot button handlers for cycling each garment type.
+    // Moves the shirt slot to the previous garment.
     private void PrevShirt() => Cycle("shirt", -1);
+
+    // Moves the shirt slot to the next garment.
     private void NextShirt() => Cycle("shirt", 1);
+
+    // Moves the pants slot to the previous garment.
     private void PrevPants() => Cycle("pants", -1);
+
+    // Moves the pants slot to the next garment.
     private void NextPants() => Cycle("pants", 1);
+
+    // Moves the shoes slot to the previous garment.
     private void PrevShoes() => Cycle("shoes", -1);
+
+    // Moves the shoes slot to the next garment.
     private void NextShoes() => Cycle("shoes", 1);
     // Main action behind the "Find match" button:
     // 1) Builds seed set from locked slots / selected items
-    // 2) Calls MatchingService.FindMatchesAsync
-    // 3) Maps service result to UI states (blocked/no-match/error/success)
+    // 2) Applies the default 2 shirt / 2 pants / 2 shoes minimum before scoring
+    // 3) Calls MatchingService.FindMatchesAsync
+    // 4) Maps service result to UI states (blocked/no-match/error/success)
+    // FLOW_MATCH_RUN_WEB_02: SlotMachineMatch.RunMatch builds selected seeds and calls MatchingService.FindMatchesAsync.
+    // This shared component is involved because the web matcher UI lives here; next step is MatchingService scoring and returned suggestions.
     private async Task RunMatch()
     {
-        Running = true;
         Status = string.Empty;
         _progressPercent = 2;
         _progressStep = _progressSteps[0];
@@ -522,6 +578,20 @@
         _saveFeedback.Clear();
         _savingSuggestionSignatures.Clear();
         StateHasChanged();
+
+        var defaultMinimumBlock = BuildDefaultMinimumBlock();
+        if (defaultMinimumBlock != null)
+        {
+            Running = false;
+            _blocked = defaultMinimumBlock;
+            Status = "Matching needs at least 2 shirts, 2 pants, and 2 shoes.";
+            StateHasChanged();
+            return;
+        }
+
+        Running = true;
+        StateHasChanged();
+
         var seeds = new HashSet<string>(_untypedSeedIds, StringComparer.OrdinalIgnoreCase);
         if (LockShirt && CurrentShirt != null) seeds.Add(CurrentShirt.GarmentId);
         if (LockPants && CurrentPants != null) seeds.Add(CurrentPants.GarmentId);
@@ -591,8 +661,27 @@
 
         StateHasChanged();
     }
+    // Function role:
+    // Applies the default 2 shirt / 2 pants / 2 shoes rule before calling the service.
+    private MatchResult? BuildDefaultMinimumBlock()
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["shirt"] = _shirts.Count,
+            ["pants"] = _pants.Count,
+            ["shoes"] = _shoes.Count
+        };
+        var hasDefaultMinimum = RequiredMatcherTypes.All(type =>
+            counts.TryGetValue(type, out var count) &&
+            count >= MatchingService.MinPerTypeRequired);
+
+        return hasDefaultMinimum
+            ? null
+            : MatchResult.CreateBlocked(MatchingService.MinPerTypeRequired, counts);
+    }
     // UI-only progress animator so users see progress while Gemini/service scoring is running.
     // Does not affect the actual matching logic.
+    // Animates progress while the real match task runs in the background.
     private async Task RunProgressAsync(Task matchTask)
     {
         const int fullProgressMs = 40000;
@@ -629,6 +718,8 @@
             await InvokeAsync(StateHasChanged);
         }
     }
+    // Function role:
+    // Expands/collapses extra recommendation cards under the primary result.
     private void ToggleSuggestion(int index)
     {
         if (_expandedSuggestions.Contains(index))
@@ -636,8 +727,12 @@
         else
             _expandedSuggestions.Add(index);
     }
+    // Function role:
+    // Stable key for duplicate-save prevention and card-specific feedback.
     private static string SuggestionSignature(ScoredCombination suggestion) =>
         $"{suggestion.ShirtId}|{suggestion.PantsId}|{suggestion.ShoesId}".ToLowerInvariant();
+    // Function role:
+    // Disables save when matcher is running, a save is in progress, or the suggestion was already saved.
     private bool IsSuggestionSaveDisabled(ScoredCombination suggestion)
     {
         var signature = SuggestionSignature(suggestion);
@@ -645,6 +740,7 @@
                _savingSuggestionSignatures.Contains(signature) ||
                _savedSuggestionSignatures.Contains(signature);
     }
+    // Chooses Save/Saving/Saved text for one recommendation card.
     private string GetSuggestionSaveButtonText(ScoredCombination suggestion)
     {
         var signature = SuggestionSignature(suggestion);
@@ -656,6 +752,8 @@
     }
     // Persists a selected recommendation as a saved outfit via MatchingService.
     // Prevents duplicate clicks and returns per-suggestion feedback in the card.
+    // FLOW_MATCH_SAVE_WEB_01: User clicks Save on a web recommendation card.
+    // This shared component is involved because suggestion cards live here; next step is MatchingService.SaveOutfitSuggestionAsync.
     private async Task SaveSuggestionAsync(ScoredCombination suggestion)
     {
         var signature = SuggestionSignature(suggestion);
@@ -691,9 +789,14 @@
         }
     }
     // Closes matcher overlay and returns to Closet page context.
+    // Closes this overlay by notifying the parent page.
     private Task Close() => OnClose.HasDelegate ? OnClose.InvokeAsync() : Task.CompletedTask;
+
+    // Type check used when splitting the incoming garment list into slot pools.
     private static bool IsType(Garment g, string type) =>
         string.Equals(NormalizeTypeName(g.Type), type, StringComparison.OrdinalIgnoreCase);
+
+    // Finds the full garment details for a recommendation piece id.
     private Garment? FindGarment(string id) =>
         Garments.FirstOrDefault(g => string.Equals(g.GarmentId, id, StringComparison.OrdinalIgnoreCase));
     // Normalizes noisy garment type labels into the three matcher buckets:
@@ -707,8 +810,11 @@
         if (value.Contains("shoe") || value.Contains("sneaker") || value.Contains("boot")) return "shoes";
         return string.Empty;
     }
+    // Function role:
+    // Shared image URL builder for slot previews and recommendation pieces.
     private static string GetImageUrl(string garmentId) =>
         $"/media/garments/by-garment/{garmentId}";
+    // Safe modulo for cycling backwards through slot lists.
     private static int Mod(int x, int m) => (x % m + m) % m;
 
 }

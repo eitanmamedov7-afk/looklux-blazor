@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
@@ -17,54 +12,40 @@
   IgnorableNamespaces="uap rescap">
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Identity Name="maui-package-name-placeholder" Publisher="CN=User Name" Version="0.0.0.0" />
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <mp:PhoneIdentity PhoneProductId="1F4C0F27-7CCC-46F5-97DF-6B8FD45CB5E9" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Properties>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <DisplayName>$placeholder$</DisplayName>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <PublisherDisplayName>User Name</PublisherDisplayName>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Logo>$placeholder$.png</Logo>
   </Properties>
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Dependencies>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
   </Dependencies>
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Resources>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Resource Language="x-generate" />
   </Resources>
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Applications>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
 
-      <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
       <uap:VisualElements
         DisplayName="$placeholder$"
         Description="$placeholder$"
@@ -72,20 +53,16 @@
         Square44x44Logo="$placeholder$.png"
         BackgroundColor="transparent">
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <uap:DefaultTile Square71x71Logo="$placeholder$.png" Wide310x150Logo="$placeholder$.png" Square310x310Logo="$placeholder$.png" />
 
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
         <uap:SplashScreen Image="$placeholder$.png" />
       </uap:VisualElements>
     </Application>
   </Applications>
 
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Capabilities>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <rescap:Capability Name="runFullTrust" />
   </Capabilities>
 

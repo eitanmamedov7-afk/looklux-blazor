@@ -1,50 +1,35 @@
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
 
 
 
 
 
 
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
 
-  <!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
   <PropertyGroup>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <TargetFramework>net8.0</TargetFramework>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Nullable>enable</Nullable>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <UserSecretsId>30e6eb90-6fc2-480f-b754-52e93542d484</UserSecretsId>
   </PropertyGroup>
 
 
-  <!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
   <ItemGroup>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <PackageReference Include="MySql.Data" Version="9.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
 
-  <!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
   <ItemGroup>
 
     <!-- Compile shared data-access sources directly into this project to avoid blocked runtime DLL loading under enterprise code integrity policy. -->
@@ -55,36 +40,27 @@
   </ItemGroup>
 
 
-  <!-- הגדרת ערך בקובץ תצורה שמשפיע על בנייה, הרצה או חיבור לשירותים. -->
   <ItemGroup>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Content Include="Prompts\garment-features.txt">
 
-      <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 
-      <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Content Include="Prompts\outfit-scoring.txt">
 
-      <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 
-      <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 
-  <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
   <Target Name="EnsureWebDevPortsAreFree"
           BeforeTargets="PrepareForBuild"
           Condition="'$(Configuration)' == 'Debug' and $([MSBuild]::IsOSPlatform('windows'))">
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\ensure-web-dev-prereqs.ps1&quot; -RepoRoot &quot;$(MSBuildProjectDirectory)\..&quot;"
           IgnoreExitCode="true" />
   </Target>

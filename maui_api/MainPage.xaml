@@ -1,84 +1,228 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט. -->
-<!-- למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת. -->
-<!-- לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו. -->
-<!-- איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן. -->
+<!--
+SEARCH INDEX
+MAUI, MOBILE, UI, LOGIN, REGISTER, PASSWORD, CLOSET, GARMENT, MATCH, OUTFIT, ADMIN, DELETE, SERVER
 
-
-
-
-<!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
+Topic: MAUI MAIN PAGE LAYOUT
+Purpose: Defines the mobile screens/buttons that call handlers in MainPage.xaml.cs.
+Search keywords: MAUI MOBILE UI LOGIN REGISTER PASSWORD CLOSET GARMENT MATCH OUTFIT ADMIN DELETE SERVER
+When to use it: Show this when explaining where mobile buttons and panels are declared.
+Important notes: Button Clicked names map directly to methods in MainPage.xaml.cs.
+-->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="gadifff.Mobile.MainPage"
              ios:Page.UseSafeArea="True"
-             BackgroundColor="#0B0B0D">
+             BackgroundColor="{StaticResource AppBackground}">
 
-    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-    <Grid>
-
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-        <WebView x:Name="AppWebView"
-                 HorizontalOptions="FillAndExpand"
-                 VerticalOptions="FillAndExpand"
-                 Navigating="OnWebViewNavigating"
-                 Navigated="OnWebViewNavigated" />
-
-
-        <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-        <Grid x:Name="Overlay"
-              IsVisible="False"
-              BackgroundColor="#C00B0B0D"
-              Padding="24">
-
-            <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-            <ScrollView>
-
-                <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-                <VerticalStackLayout HorizontalOptions="FillAndExpand"
-                                     VerticalOptions="Center"
-                                     Spacing="10"
-                                      MaximumWidthRequest="560">
-
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-                    <ActivityIndicator x:Name="LoadingIndicator"
-                                       IsVisible="False"
-                                       IsRunning="False"
-                                       Color="#FFFFFF"
-                                       HorizontalOptions="Center" />
-
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-                    <Label x:Name="OverlayMessage"
-                           TextColor="#F2F2F2"
-                           LineBreakMode="WordWrap"
-                           HorizontalTextAlignment="Center" />
-
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-                    <Entry x:Name="ServerUrlEntry"
-                           Placeholder="Server URL (example: http://192.168.1.33:7166)"
-                           Keyboard="Url"
-                           IsVisible="False"
-                           HorizontalOptions="FillAndExpand"
-                           TextColor="#FFFFFF"
-                           PlaceholderColor="#B8B8B8"
-                           BackgroundColor="#1E1E22" />
-
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-                    <Button x:Name="SaveServerUrlButton"
-                            Text="Save URL &amp; Retry"
-                            IsVisible="False"
-                            Clicked="OnSaveServerUrlClicked"
-                            HorizontalOptions="FillAndExpand" />
-
-                    <!-- תגית הגדרה שמוסיפה משד, משאב או רכיב תצוגת לקובץ. -->
-                    <Button x:Name="RetryButton"
-                            Text="Retry"
-                            IsVisible="False"
-                            Clicked="OnRetryClicked"
-                            HorizontalOptions="FillAndExpand" />
+    <Grid RowDefinitions="Auto,*">
+        <Border Style="{StaticResource TopBar}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="LookLux" Style="{StaticResource AppTitle}" />
+                    <Label x:Name="ServerLabel" Text="Connecting..." Style="{StaticResource MutedText}" />
                 </VerticalStackLayout>
-            </ScrollView>
-        </Grid>
+                <Button Grid.Column="1" Text="Server" Style="{StaticResource SecondaryButton}" Clicked="OnServerClicked" />
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="18" Spacing="14">
+                <ActivityIndicator x:Name="BusyIndicator"
+                                   IsVisible="False"
+                                   IsRunning="False"
+                                   HorizontalOptions="Center" />
+
+                <Label x:Name="MessageLabel"
+                       IsVisible="False"
+                       Style="{StaticResource StatusText}" />
+
+                <Border x:Name="ServerPanel" Style="{StaticResource AppCard}" IsVisible="False">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Server URL" Style="{StaticResource SectionTitle}" />
+                        <Entry x:Name="ServerUrlEntry" Placeholder="http://10.0.2.2:7166" Keyboard="Url" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Text="Save" Clicked="OnSaveServerClicked" />
+                            <Button Grid.Column="1" Text="Retry" Style="{StaticResource SecondaryButton}" Clicked="OnRetryServerClicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout x:Name="AuthPanel" Spacing="12">
+                    <Border Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Sign in" Style="{StaticResource SectionTitle}" />
+                            <Entry x:Name="EmailEntry" Placeholder="Email" Keyboard="Email" />
+                            <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" />
+                            <!-- FLOW_LOGIN_MOBILE_01: User taps Sign in; next step is MainPage.xaml.cs OnLoginClicked. -->
+                            <Button Text="Sign in" Clicked="OnLoginClicked" />
+                            <!-- FLOW_PASSWORD_RESET_MOBILE_01: User taps Forgot password; next step is MainPage.xaml.cs OnForgotPasswordClicked. -->
+                            <Button Text="Forgot password" Style="{StaticResource SecondaryButton}" Clicked="OnForgotPasswordClicked" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource AppCard}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Create customer account" Style="{StaticResource SectionTitle}" />
+                            <Entry x:Name="RegisterNameEntry" Placeholder="Full name" />
+                            <Entry x:Name="RegisterEmailEntry" Placeholder="Email" Keyboard="Email" />
+                            <Entry x:Name="RegisterPasswordEntry" Placeholder="Password" IsPassword="True" />
+                            <Entry x:Name="RegisterConfirmPasswordEntry" Placeholder="Confirm password" IsPassword="True" />
+                            <!-- FLOW_REGISTER_MOBILE_01: User taps Register after entering account details; next step is MainPage.xaml.cs OnRegisterClicked. -->
+                            <Button Text="Register" Style="{StaticResource SecondaryButton}" Clicked="OnRegisterClicked" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="AppPanel" IsVisible="False" Spacing="14">
+                    <Border Style="{StaticResource AppCard}">
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label x:Name="CurrentUserLabel" Style="{StaticResource SectionTitle}" />
+                                    <Label x:Name="CurrentRoleLabel" Style="{StaticResource MutedText}" />
+                                </VerticalStackLayout>
+                                <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                                    <!-- FLOW_LOGOUT_MOBILE_01: User taps Logout; next step is MainPage.xaml.cs OnLogoutClicked. -->
+                                    <Button Text="Logout" Style="{StaticResource SecondaryButton}" Clicked="OnLogoutClicked" />
+                                    <!-- FLOW_DELETE_ACCOUNT_MOBILE_01: User taps Delete account; next step is MainPage.xaml.cs OnDeleteAccountClicked confirmation. -->
+                                    <Button Text="Delete account" Style="{StaticResource SecondaryButton}" Clicked="OnDeleteAccountClicked" />
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <ScrollView Grid.Row="1" Orientation="Horizontal">
+                                <HorizontalStackLayout Spacing="8">
+                                    <!-- FLOW_DASHBOARD_COUNTS_MOBILE_01: User lands on Home after login; next step is MainPage.xaml.cs LoadDashboardAsync. -->
+                                    <Button Text="Home" Style="{StaticResource TabButton}" Clicked="OnHomeTabClicked" />
+                                    <!-- FLOW_CLOSET_VIEW_MOBILE_01: User taps Closet; next step is MainPage.xaml.cs OnClosetTabClicked and LoadAllAsync. -->
+                                    <Button Text="Closet" Style="{StaticResource TabButton}" Clicked="OnClosetTabClicked" />
+                                    <Button Text="Match" Style="{StaticResource TabButton}" Clicked="OnMatchTabClicked" />
+                                    <!-- FLOW_OUTFIT_VIEW_MOBILE_01: User taps Outfits; next step is MainPage.xaml.cs OnOutfitsTabClicked and LoadAllAsync. -->
+                                    <Button Text="Outfits" Style="{StaticResource TabButton}" Clicked="OnOutfitsTabClicked" />
+                                    <Button x:Name="AdminTabButton" Text="Admin" Style="{StaticResource TabButton}" Clicked="OnAdminTabClicked" />
+                                </HorizontalStackLayout>
+                            </ScrollView>
+                        </Grid>
+                    </Border>
+
+                    <VerticalStackLayout x:Name="HomePanel" Spacing="12">
+                        <Border Style="{StaticResource AppCard}">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="Home" Style="{StaticResource SectionTitle}" />
+                                <Label x:Name="HomeSummaryLabel" Style="{StaticResource MutedText}" />
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="18" RowSpacing="12">
+                                    <VerticalStackLayout Spacing="3">
+                                        <Label Text="Garments" Style="{StaticResource MutedText}" />
+                                        <Label x:Name="DashboardGarmentsLabel" Text="0" Style="{StaticResource SectionTitle}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                        <Label Text="Outfits" Style="{StaticResource MutedText}" />
+                                        <Label x:Name="DashboardOutfitsLabel" Text="0" Style="{StaticResource SectionTitle}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout x:Name="DashboardCustomersGroup" Grid.Row="1" Spacing="3">
+                                        <Label Text="Customers" Style="{StaticResource MutedText}" />
+                                        <Label x:Name="DashboardCustomersLabel" Text="0" Style="{StaticResource SectionTitle}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout x:Name="DashboardAdminsGroup" Grid.Row="1" Grid.Column="1" Spacing="3">
+                                        <Label Text="Admins" Style="{StaticResource MutedText}" />
+                                        <Label x:Name="DashboardAdminsLabel" Text="0" Style="{StaticResource SectionTitle}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <Button Text="Open closet" Clicked="OnClosetTabClicked" />
+                                    <Button Grid.Column="1" Text="Find matches" Style="{StaticResource SecondaryButton}" Clicked="OnMatchTabClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout x:Name="ClosetPanel" IsVisible="False" Spacing="12">
+                        <Border Style="{StaticResource AppCard}">
+                            <VerticalStackLayout Spacing="10">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Label Text="Closet" Style="{StaticResource SectionTitle}" />
+                                    <Button Grid.Column="1" Text="Refresh" Style="{StaticResource SecondaryButton}" Clicked="OnRefreshClicked" />
+                                </Grid>
+                                <!-- FLOW_GARMENT_UPLOAD_MOBILE_01: User taps Upload garment photo; next step is MainPage.xaml.cs OnUploadClicked. -->
+                                <Button Text="Upload garment photo" Clicked="OnUploadClicked" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <VerticalStackLayout x:Name="GarmentList" Spacing="10" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout x:Name="MatchPanel" IsVisible="False" Spacing="12">
+                        <Border Style="{StaticResource AppCard}">
+                            <VerticalStackLayout Spacing="10">
+                                <Label Text="Outfit match" Style="{StaticResource SectionTitle}" />
+                                <Editor x:Name="MatchRequestEditor"
+                                        Placeholder="Optional request, for example: black sporty outfit"
+                                        AutoSize="TextChanges"
+                                        HeightRequest="90" />
+                                <!-- FLOW_MATCH_RUN_MOBILE_01: User taps Find matches; next step is MainPage.xaml.cs OnRunMatchClicked. -->
+                                <Button Text="Find matches" Clicked="OnRunMatchClicked" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <VerticalStackLayout x:Name="MatchResultsList" Spacing="10" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout x:Name="OutfitsPanel" IsVisible="False" Spacing="12">
+                        <Border Style="{StaticResource AppCard}">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Label Text="Saved outfits" Style="{StaticResource SectionTitle}" />
+                                <Button Grid.Column="1" Text="Refresh" Style="{StaticResource SecondaryButton}" Clicked="OnRefreshClicked" />
+                            </Grid>
+                        </Border>
+                        <VerticalStackLayout x:Name="OutfitList" Spacing="10" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout x:Name="AdminPanel" IsVisible="False" Spacing="12">
+                        <VerticalStackLayout x:Name="AdminCustomerListPanel" Spacing="12">
+                            <Border Style="{StaticResource AppCard}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Admin customers" Style="{StaticResource SectionTitle}" />
+                                    <Entry x:Name="AdminNameEntry" Placeholder="Full name" />
+                                    <Entry x:Name="AdminEmailEntry" Placeholder="Email" Keyboard="Email" />
+                                    <Entry x:Name="AdminPasswordEntry" Placeholder="Password for new user" IsPassword="True" />
+                                    <Picker x:Name="AdminRolePicker" Title="Role" />
+                                    <!-- FLOW_ADMIN_USER_MANAGE_MOBILE_01: Admin taps Create account; next step is MainPage.xaml.cs OnCreateUserClicked. -->
+                                    <Button Text="Create account" Clicked="OnCreateUserClicked" />
+                                </VerticalStackLayout>
+                            </Border>
+                            <VerticalStackLayout x:Name="AdminUserList" Spacing="10" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout x:Name="AdminCustomerDetailPanel" IsVisible="False" Spacing="12">
+                            <Border Style="{StaticResource AppCard}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                        <!-- FLOW_ADMIN_VIEW_CUSTOMER_MOBILE_05: Admin taps Back; next step returns to customer list without changing normal tabs. -->
+                                        <Button Text="Back" Style="{StaticResource SecondaryButton}" Clicked="OnBackToAdminCustomersClicked" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label x:Name="AdminCustomerDetailTitle" Text="Customer data" Style="{StaticResource SectionTitle}" />
+                                            <Label Text="Read-only garments and saved outfits" Style="{StaticResource MutedText}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Style="{StaticResource AppCard}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Customer garments" Style="{StaticResource SectionTitle}" />
+                                    <VerticalStackLayout x:Name="AdminCustomerGarmentList" Spacing="10" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Style="{StaticResource AppCard}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Customer outfits" Style="{StaticResource SectionTitle}" />
+                                    <VerticalStackLayout x:Name="AdminCustomerOutfitList" Spacing="10" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 </ContentPage>

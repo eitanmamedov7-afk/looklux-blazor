@@ -4,7 +4,10 @@
 @* Role in project:
    Reusable multi-select control used by closet/recommendation filters.
    It does not fetch data itself; it only edits selected values and reports changes to parent pages. *@
-<div class="multi-filter @(Disabled ? "is-disabled" : string.Empty)">
+@* Layout:
+   Trigger button opens a small option panel with search, "All" clear button, checkboxes, and removable chips.
+   Parent pages use SelectedValuesChanged to refresh DB-backed results after the user changes a selection. *@
+<div class="multi-filter @(Disabled ? "is-disabled" : string.Empty)"> 
     <label class="form-label">@Label</label>
 
     <button type="button"
@@ -98,8 +101,10 @@
     private string SelectedSummary =>
         SelectedValues.Count == 0 ? AllLabel : $"{SelectedValues.Count} selected";
 
+    // Checks whether one option should render as checked.
     private bool IsSelected(string value) => SelectedValues.Contains(value);
 
+    // Opens or closes the options panel below the trigger button.
     private void ToggleOpen() => _open = !_open;
 
     // Clears this filter group and tells parent to rerun filter pipeline.

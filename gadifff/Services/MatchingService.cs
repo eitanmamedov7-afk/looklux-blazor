@@ -11,6 +11,16 @@ using Microsoft.Extensions.Logging;
 using Models;
 namespace gadifff.Services
 {
+    // SEARCH INDEX
+    // MATCH, RECOMMENDATION, OUTFIT, GARMENT, GEMINI, AI, SCORE, FILTER, VALIDATE, ADD, SAVE, DUPLICATE, DATABASE
+    //
+    // Topic: MATCHING AND RECOMMENDATION SERVICE
+    // Purpose: Builds valid outfit combinations, scores them with Gemini/local fallback, and saves selected outfits.
+    // Search keywords: MATCH RECOMMENDATION OUTFIT GARMENT GEMINI AI SCORE FILTER VALIDATE ADD SAVE DUPLICATE DATABASE
+    // When to use it: Show this when explaining how the recommendation feature works in web and MAUI.
+    // Important notes: Both SlotMachineMatch.razor and mobile /api/mobile/matches endpoints use this same service.
+    //
+    // SECTION: MATCH RECOMMENDATION ENGINE
     // Role in project:
     // Backend coordinator for the recommendation feature opened from Closet -> "Open matcher" / "Get Best Recommendations".
     // It validates closet readiness, builds outfit combinations, asks Gemini to score them, applies fallback ranking,
@@ -31,9 +41,9 @@ Output must be either:
     {
       "index": 0,
       "score": 0,
-      "style_label": "short style label",
+      "style_label": "casual|smart_casual|formal|sporty|streetwear",
       "explanation": "1-3 sentences describing why the pieces work together",
-      "recommended_places": ["place or occasion", "place or occasion"]
+      "recommended_places": ["daily|work|gym|date|event"]
     }
   ]
 }
@@ -50,8 +60,8 @@ Rules:
 - Do not return duplicate combinations.
 - results must be sorted best-to-worst.
 - score must be integer 0-100.
-- style_label should be concise and realistic (e.g., sporty casual, smart casual, minimal street).
-- recommended_places must be an array with 1-4 short strings.
+- style_label must be exactly one of: casual, smart_casual, formal, sporty, streetwear.
+- recommended_places must be an array with 1-4 values chosen only from: daily, work, gym, date, event.
 """;
         private readonly GarmentDB _garmentDb;
         private readonly OutfitDB _outfitDb;
@@ -60,8 +70,32 @@ Rules:
         private readonly ILogger<MatchingService> _logger;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly IConfiguration _config;
+
+        // Minimum closet inventory rule used by both web and mobile recommendation flows.
         public const int MinPerTypeRequired = 2;
+
+        // Saved outfit compatibility threshold stored on the outfits table.
         private const int ScoreThreshold = 70;
+
+        private static readonly HashSet<string> AllowedStyleLabels = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "casual",
+            "smart_casual",
+            "formal",
+            "sporty",
+            "streetwear"
+        };
+
+        private static readonly HashSet<string> AllowedRecommendedPlaces = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "daily",
+            "work",
+            "gym",
+            "date",
+            "event"
+        };
+
+        // User-request aliases used by deterministic fallback scoring.
         private static readonly Dictionary<string, string> CanonicalTagByAlias = new(StringComparer.OrdinalIgnoreCase)
         {
             ["office"] = "formal",
@@ -98,6 +132,7 @@ Rules:
             ["autumn"] = "fall",
             ["fall"] = "fall"
         };
+        // Keyword sets used when the user asks for a black, sporty, or luxury-looking outfit.
         private static readonly HashSet<string> BlackColorKeywords = new(StringComparer.OrdinalIgnoreCase)
         {
             "black", "jet", "charcoal", "graphite", "coal", "onyx", "ink", "ebony"
@@ -130,8 +165,15 @@ Rules:
             _hostEnvironment = hostEnvironment;
             _config = config;
         }
-        // Gate check used before matching:
-        // confirms user has enough shirt/pants/shoes items to produce valid outfits.
+        // Topic: Match gate validation
+        // Purpose: Confirms user has enough shirt/pants/shoes items to produce valid outfit combinations.
+        // Search keywords: VALIDATE MATCH COUNT GARMENT MINIMUM
+        // When to use it: Show this when explaining the minimum 2 shirts, 2 pants, 2 shoes rule.
+        // Important notes: This prevents recommendation attempts that cannot produce enough valid outfits.
+        // FLOW_MATCH_RUN_WEB_05: CanMatchAsync validates the minimum 2 shirts, 2 pants, 2 shoes rule before web recommendations run.
+        // This service is involved because web matching must share the same gate as MAUI; next step is FindMatchesAsync or blocked response.
+        // FLOW_MATCH_RUN_MOBILE_07: CanMatchAsync validates the same minimum inventory rule for MAUI recommendations.
+        // This service is involved because mobile matching uses the shared recommendation engine; next step is FindMatchesAsync or blocked response.
         public async Task<MatchingGateResult> CanMatchAsync(string userId, IEnumerable<Garment>? garmentsOverride = null)
         {
             var garments = garmentsOverride?.ToList() ?? await _garmentDb.GetByUserAsync(userId);
@@ -148,9 +190,19 @@ Rules:
             };
         }
 
-        // Core recommendation pipeline used by SlotMachineMatch.RunMatch:
-        // resolves seeds, builds candidate combinations, scores them (Gemini + local fallback),
-        // and returns top recommendations or a user-facing no-match reason.
+        // Topic: Find outfit matches
+        // Purpose: Resolves seed garments, builds candidate combinations, scores them, and returns top recommendations.
+        // Search keywords: MATCH RECOMMENDATION GARMENT SCORE GEMINI FILTER VALIDATE LIST
+        // When to use it: Show this for the main recommendation flow from web or MAUI.
+        // Important notes: Uses DB garments as the authoritative source and falls back to deterministic scoring if AI fails.
+        // FLOW_MATCH_RUN_WEB_03: FindMatchesAsync starts the web recommendation engine and asks GarmentDB for the user's closet rows.
+        // This service is involved because web recommendation logic belongs in one backend service; next step is GarmentDB.GetByUserAsync.
+        // FLOW_MATCH_RUN_WEB_07: FindMatchesAsync scores valid combinations and returns final web suggestions.
+        // This service is involved because scoring/ranking happens here; final step is SlotMachineMatch rendering suggestions.
+        // FLOW_MATCH_RUN_MOBILE_05: FindMatchesAsync starts the MAUI recommendation engine and asks GarmentDB for the user's closet rows.
+        // This service is involved because MAUI calls the shared backend matcher; next step is GarmentDB.GetByUserAsync.
+        // FLOW_MATCH_RUN_MOBILE_09: FindMatchesAsync scores valid combinations and returns final mobile suggestions.
+        // This service is involved because scoring/ranking happens here; final step is Program.cs returning suggestions to MAUI.
         public async Task<MatchResult> FindMatchesAsync(
             string userId,
             string[] seedGarmentIds,
@@ -302,8 +354,15 @@ Rules:
             return MatchResult.CreateSuccess(top);
         }
 
-        // Saves one recommendation selected in the matcher UI as an outfit + outfit-garment relations.
-        // Also prevents duplicates for the same garment combination.
+        // Topic: Save recommendation as outfit
+        // Purpose: Persists one selected recommendation to outfits plus outfit_garments links.
+        // Search keywords: SAVE ADD OUTFIT RECOMMENDATION DATABASE DUPLICATE
+        // When to use it: Show this when explaining what happens after clicking Save on a suggestion.
+        // Important notes: Blocks duplicate saved outfits before inserting rows.
+        // FLOW_MATCH_SAVE_WEB_02: SaveOutfitSuggestionAsync validates the selected web recommendation and checks duplicates.
+        // This service is involved because saving must be identical for web and MAUI; next step is OutfitDB/OutfitGarmentDB inserts.
+        // FLOW_MATCH_SAVE_MOBILE_03: SaveOutfitSuggestionAsync validates the selected MAUI recommendation and checks duplicates.
+        // This service is involved because MAUI saves through the same backend path; next step is OutfitDB/OutfitGarmentDB inserts.
         public async Task<SaveOutfitResult> SaveOutfitSuggestionAsync(
             string userId,
             ScoredCombination recommendation,
@@ -374,6 +433,9 @@ Rules:
                 return SaveOutfitResult.Fail("Outfit row saved, but garment links failed.");
             return SaveOutfitResult.SuccessResult(outfitId);
         }
+
+        // Builds the three link rows for outfit_garments after an outfit recommendation is saved.
+        // Project process affected: saved outfit display needs these links to know the shirt/pants/shoes.
         private static List<OutfitGarment> BuildOutfitGarments(
             string outfitId,
             ScoredCombination recommendation,
@@ -411,6 +473,9 @@ Rules:
                 }
             };
         }
+
+        // Determines which garment type was used as the recommendation seed.
+        // This is saved on the outfit row for history/filtering.
         private static string DetermineSeedType(IEnumerable<Garment> seed)
         {
             var types = seed
@@ -487,6 +552,8 @@ Rules:
                 return ScoringOutcome.Empty;
             }
         }
+
+        // Loads the outfit scoring prompt from config, file, or built-in fallback.
         private async Task<string> LoadScoringPromptAsync()
         {
             var configPrompt = _config[ScoringPromptConfigKey];
@@ -502,6 +569,8 @@ Rules:
             }
             return BuiltInScoringPrompt;
         }
+
+        // Resolves a configured prompt-file path relative to the web project root.
         private string ResolvePromptPath(string? configuredPath)
         {
             var value = string.IsNullOrWhiteSpace(configuredPath)
@@ -511,6 +580,8 @@ Rules:
                 return value;
             return Path.Combine(_hostEnvironment.ContentRootPath, value.Replace('/', Path.DirectorySeparatorChar));
         }
+
+        // Builds the full JSON prompt sent to Gemini for scoring candidate outfits.
         private static string BuildMatchPrompt(
             List<Combination> combos,
             string seedType,
@@ -534,6 +605,8 @@ Rules:
             var json = JsonSerializer.Serialize(payload);
             return $"{scoringInstructions}\nInput JSON:\n{json}";
         }
+
+        // Reduces a full Garment model to only the fields Gemini needs for outfit scoring.
         private static object BuildGarmentPromptObject(Garment garment)
         {
             return new
@@ -555,8 +628,12 @@ Rules:
                 brand = garment.Brand
             };
         }
+
+        // Reads style tags from the current style_tags column or from older feature_json data.
         private static List<string> ParseStyleTags(string? styleTagsJson, string? featureJson)
         {
+            // Reads a JSON array of tags from one text column.
+            // Used first for style_tags, then as fallback inside feature_json.
             static List<string> ExtractFromJsonArray(string? json)
             {
                 if (string.IsNullOrWhiteSpace(json))
@@ -603,6 +680,8 @@ Rules:
                 return new List<string>();
             }
         }
+
+        // Parses Gemini response JSON into recommendations, no-match messages, or error messages.
         private ScoringOutcome ParseScoringOutcome(string text, List<Combination> combos)
         {
             try
@@ -658,6 +737,8 @@ Rules:
             }
             return ScoringOutcome.Empty;
         }
+
+        // Parses an array returned by Gemini into scored outfit recommendations.
         private static List<ScoredCombination> ParseRecommendationArray(JsonElement array, List<Combination> combos)
         {
             var list = new List<ScoredCombination>();
@@ -670,6 +751,8 @@ Rules:
             }
             return list;
         }
+
+        // Parses one recommendation object and resolves garment ids either by index or explicit ids.
         private static bool TryParseRecommendationItem(
             JsonElement item,
             List<Combination> combos,
@@ -707,11 +790,11 @@ Rules:
             if (TryReadIntByNames(item, out var parsedScore, "score", "match_score", "matchScore", "rating"))
                 score = parsedScore;
             score = Math.Clamp(score, 0, 100);
-            var styleLabel = ReadStringByNames(item, "style_label", "styleLabel", "label") ?? "balanced casual";
+            var styleLabel = NormalizeStyleLabel(ReadStringByNames(item, "style_label", "styleLabel", "label"));
             var explanation = ReadStringByNames(item, "explanation", "reason", "why")
                 ?? "The colors and proportions create a balanced outfit.";
-            var recommendedPlaces = ReadStringArrayOrStringByNames(item, "recommended_places", "recommendedPlaces", "places", "occasions")
-                ?? "daily";
+            var recommendedPlaces = NormalizeRecommendedPlaces(
+                ReadStringArrayOrStringByNames(item, "recommended_places", "recommendedPlaces", "places", "occasions"));
             var rank = TryReadIntByNames(item, out var parsedRank, "rank", "position") ? parsedRank : fallbackRank;
 
             scored = new ScoredCombination
@@ -727,6 +810,71 @@ Rules:
             };
             return true;
         }
+
+        // Normalizes Gemini/free-text style labels into the fixed outfit style filters used by the app.
+        private static string NormalizeStyleLabel(string? raw)
+        {
+            var value = (raw ?? string.Empty).Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
+            if (AllowedStyleLabels.Contains(value))
+                return value;
+
+            if (value.Contains("smart") || value.Contains("business") || value.Contains("office"))
+                return "smart_casual";
+
+            if (value.Contains("formal") || value.Contains("elegant") || value.Contains("dress"))
+                return "formal";
+
+            if (value.Contains("sport") || value.Contains("gym") || value.Contains("athletic"))
+                return "sporty";
+
+            if (value.Contains("street") || value.Contains("urban"))
+                return "streetwear";
+
+            return "casual";
+        }
+
+        // Normalizes Gemini/free-text where-to-wear values into the fixed outfit place filters used by the app.
+        private static string NormalizeRecommendedPlaces(string? raw)
+        {
+            var values = (raw ?? string.Empty)
+                .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(NormalizeRecommendedPlace)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(4)
+                .ToList();
+
+            if (values.Count == 0)
+                values.Add("daily");
+
+            return string.Join(", ", values);
+        }
+
+        private static string? NormalizeRecommendedPlace(string? raw)
+        {
+            var value = (raw ?? string.Empty).Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
+            if (AllowedRecommendedPlaces.Contains(value))
+                return value;
+
+            if (value.Contains("work") || value.Contains("office") || value.Contains("business"))
+                return "work";
+
+            if (value.Contains("gym") || value.Contains("sport") || value.Contains("training") || value.Contains("workout"))
+                return "gym";
+
+            if (value.Contains("date") || value.Contains("dinner") || value.Contains("evening"))
+                return "date";
+
+            if (value.Contains("event") || value.Contains("party") || value.Contains("wedding") || value.Contains("formal"))
+                return "event";
+
+            if (value.Contains("daily") || value.Contains("casual") || value.Contains("school") || value.Contains("city") || value.Contains("coffee"))
+                return "daily";
+
+            return null;
+        }
+
+        // Reads a garment id from Gemini JSON, accepting direct id fields or nested garment objects.
         private static string? ReadGarmentId(JsonElement obj, string snakeIdKey, string camelIdKey, string objectKey)
         {
             var direct = ReadStringByNames(obj, snakeIdKey, camelIdKey);
@@ -740,6 +888,7 @@ Rules:
                 return ReadStringByNames(nested, "id", "garment_id", "garmentId");
             return null;
         }
+        // Reads integer values from Gemini JSON numbers or numeric strings.
         private static bool TryReadInt(JsonElement element, out int value)
         {
             value = 0;
@@ -758,6 +907,7 @@ Rules:
                 return int.TryParse(element.GetString(), out value);
             return false;
         }
+        // Reads the first matching integer property from a list of possible JSON names.
         private static bool TryReadIntByNames(JsonElement obj, out int value, params string[] names)
         {
             value = 0;
@@ -768,6 +918,7 @@ Rules:
             }
             return false;
         }
+        // Case-insensitive JSON property lookup used because model output naming can vary.
         private static bool TryGetPropertyByNames(JsonElement obj, out JsonElement value, params string[] names)
         {
             foreach (var property in obj.EnumerateObject())
@@ -785,12 +936,7 @@ Rules:
             value = default;
             return false;
         }
-        private static string? ReadString(JsonElement obj, string name)
-        {
-            return obj.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
-                ? value.GetString()
-                : null;
-        }
+        // Reads the first matching string property from a list of possible JSON names.
         private static string? ReadStringByNames(JsonElement obj, params string[] names)
         {
             if (!TryGetPropertyByNames(obj, out var value, names))
@@ -799,6 +945,7 @@ Rules:
                 ? value.GetString()
                 : null;
         }
+        // Reads a model field that may come back as either a string or an array of strings.
         private static string? ReadStringArrayOrString(JsonElement obj, string name)
         {
             if (!obj.TryGetProperty(name, out var value))
@@ -817,6 +964,7 @@ Rules:
             }
             return null;
         }
+        // Reads the first matching string/array property from a list of possible JSON names.
         private static string? ReadStringArrayOrStringByNames(JsonElement obj, params string[] names)
         {
             foreach (var name in names)
@@ -827,6 +975,7 @@ Rules:
             }
             return null;
         }
+        // Extracts valid JSON from model responses that may include markdown fences or extra text.
         private static string NormalizeJson(string? raw)
         {
             var value = (raw ?? string.Empty).Trim();
@@ -878,6 +1027,7 @@ Rules:
             }
             return string.Empty;
         }
+        // Detects status values that mean Gemini could not find a suitable outfit.
         private static bool IsNoMatchStatus(string? status)
         {
             if (string.IsNullOrWhiteSpace(status))
@@ -885,6 +1035,7 @@ Rules:
             var normalized = status.Trim().ToLowerInvariant();
             return normalized is "no_match" or "nomatch" or "no-match" or "none" or "unmatched";
         }
+        // Validates a string as JSON without throwing to callers.
         private static bool TryParseJson(string input)
         {
             try
@@ -897,6 +1048,7 @@ Rules:
                 return false;
             }
         }
+        // Cleans and shortens model/API messages before returning them to the UI.
         private static string NormalizeApiMessage(string? raw)
         {
             var value = (raw ?? string.Empty).Trim();
@@ -912,6 +1064,7 @@ Rules:
                 return value[..280].TrimEnd() + "...";
             return value;
         }
+        // Detects plain-text model messages that mean no outfit matched the request.
         private static bool LooksLikeNoMatchMessage(string? message)
         {
             if (string.IsNullOrWhiteSpace(message))
@@ -931,14 +1084,20 @@ Rules:
             };
             return signals.Any(text.Contains);
         }
+        // Ensures a recommendation contains all three required garment ids.
         private static bool IsRecommendationComplete(ScoredCombination recommendation) =>
             !string.IsNullOrWhiteSpace(recommendation.ShirtId) &&
             !string.IsNullOrWhiteSpace(recommendation.PantsId) &&
             !string.IsNullOrWhiteSpace(recommendation.ShoesId);
+
+        // Signatures are used to remove duplicate recommendations for the same three garments.
         private static string GetRecommendationSignature(ScoredCombination recommendation) =>
             $"{recommendation.ShirtId}|{recommendation.PantsId}|{recommendation.ShoesId}".ToLowerInvariant();
+        // Signature for one generated candidate combination before scoring.
         private static string GetCombinationSignature(Combination combination) =>
             $"{combination.Shirt.GarmentId}|{combination.Pants.GarmentId}|{combination.Shoes.GarmentId}".ToLowerInvariant();
+
+        // Builds fast lookup from garment-combination signature to full Combination object.
         private static Dictionary<string, Combination> BuildCombinationLookup(IEnumerable<Combination> combinations)
         {
             var lookup = new Dictionary<string, Combination>(StringComparer.OrdinalIgnoreCase);
@@ -950,6 +1109,8 @@ Rules:
             }
             return lookup;
         }
+
+        // Blends Gemini score with local score so weak model output cannot fully override project rules.
         private static ResolvedRecommendation? ResolveRecommendation(
             ScoredCombination recommendation,
             IReadOnlyDictionary<string, Combination> combinationLookup,
@@ -967,6 +1128,8 @@ Rules:
                 Score = Math.Clamp(blendedScore, 0, 100)
             }, combo);
         }
+
+        // Gives extra priority to recommendations that match a user's free-text prompt.
         private static int ComputePromptPriority(
             ScoredCombination recommendation,
             IReadOnlyDictionary<string, Combination> combinationLookup,
@@ -979,6 +1142,8 @@ Rules:
                 return 0;
             return ComputePromptFitScore(combo, requestIntent);
         }
+
+        // Local prompt-fit score used for fallback ranking and request-aware sorting.
         private static int ComputePromptFitScore(Combination combo, RequestIntent requestIntent)
         {
             if (requestIntent.Tokens.Count == 0)
@@ -1011,6 +1176,8 @@ Rules:
             }
             return Math.Clamp(score, -80, 95);
         }
+
+        // Filters out recommendations that are too weak to show to the user.
         private static bool IsRecommendationViable(
             ScoredCombination recommendation,
             int promptPriority,
@@ -1020,18 +1187,7 @@ Rules:
                 return recommendation.Score >= 40;
             return recommendation.Score >= 35 || promptPriority >= 24;
         }
-        private static bool IsPromptMatch(Combination combo, RequestIntent requestIntent)
-        {
-            if (requestIntent.Tokens.Count == 0)
-                return true;
-            var tags = BuildComboTags(combo);
-            if (tags.Count == 0)
-                return false;
-            var matched = requestIntent.Tokens.Count(tags.Contains);
-            if (matched == 0)
-                return false;
-            return true;
-        }
+        // Builds a deterministic local recommendation when Gemini returns too few usable results.
         private static ScoredCombination BuildFallbackRecommendation(Combination combo, int rank, RequestIntent requestIntent)
         {
             var shirtLevel = combo.Shirt.FormalityLevel ?? 3;
@@ -1102,15 +1258,15 @@ Rules:
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key)
                 .FirstOrDefault() ?? "casual";
-            var styleLabel = dominantStyle.Replace('_', ' ');
+            var styleLabel = NormalizeStyleLabel(dominantStyle);
             var explanation = "The outfit balances color, silhouette, and formality across top, bottom, and shoes.";
             var places = new List<string>();
             if (!string.IsNullOrWhiteSpace(combo.Shirt.Occasion)) places.Add(combo.Shirt.Occasion!);
             if (!string.IsNullOrWhiteSpace(combo.Pants.Occasion)) places.Add(combo.Pants.Occasion!);
             if (!string.IsNullOrWhiteSpace(combo.Shoes.Occasion)) places.Add(combo.Shoes.Occasion!);
-            var recommendedPlaces = places.Count > 0
+            var recommendedPlaces = NormalizeRecommendedPlaces(places.Count > 0
                 ? string.Join(", ", places.Distinct(StringComparer.OrdinalIgnoreCase))
-                : "daily, coffee, city walk";
+                : "daily");
             return new ScoredCombination
             {
                 ShirtId = combo.Shirt.GarmentId,
@@ -1123,6 +1279,8 @@ Rules:
                 RecommendedPlaces = recommendedPlaces
             };
         }
+        // Local prompt alignment score used when Gemini returns too few results or unclear ranking.
+        // Project process affected: "Get Best Recommendations" still respects user text like black/sporty.
         private static int ComputeRequestBias(Combination combo, RequestIntent requestIntent)
         {
             if (requestIntent.Tokens.Count == 0)
@@ -1157,6 +1315,7 @@ Rules:
             }
             return Math.Clamp(weighted, -45, 58);
         }
+        // Counts pieces that satisfy a black-dominant outfit request.
         private static int CountBlackPieces(Combination combo)
         {
             var count = 0;
@@ -1165,8 +1324,11 @@ Rules:
             if (IsBlackGarment(combo.Shoes)) count++;
             return count;
         }
+        // Checks both primary and secondary color because the image analysis can fill either field.
         private static bool IsBlackGarment(Garment garment) =>
             IsBlackColor(garment.Color) || IsBlackColor(garment.ColorSecondary);
+
+        // Accepts exact black aliases and tokenized color descriptions such as "black denim".
         private static bool IsBlackColor(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -1176,6 +1338,7 @@ Rules:
                 return true;
             return SplitToTokens(normalized).Any(BlackColorKeywords.Contains);
         }
+        // Sporty request helper: rewards outfits with athletic/sport brands.
         private static int CountSportBrandPieces(Combination combo)
         {
             var count = 0;
@@ -1184,6 +1347,7 @@ Rules:
             if (IsSportBrand(combo.Shoes.Brand)) count++;
             return count;
         }
+        // Sporty request helper: reduces priority when a request is sporty but pieces read luxury/elegant.
         private static int CountLuxuryBrandPieces(Combination combo)
         {
             var count = 0;
@@ -1192,10 +1356,14 @@ Rules:
             if (IsLuxuryBrand(combo.Shoes.Brand)) count++;
             return count;
         }
+        // Checks whether a brand belongs to the sporty/athletic brand keyword set.
         private static bool IsSportBrand(string? brand) =>
             IsBrandMatch(brand, SportBrandKeywords);
+
+        // Checks whether a brand belongs to the luxury brand keyword set.
         private static bool IsLuxuryBrand(string? brand) =>
             IsBrandMatch(brand, LuxuryBrandKeywords);
+        // Matches brand names by exact value, multi-word contains, and token contains.
         private static bool IsBrandMatch(string? brand, HashSet<string> keywords)
         {
             if (string.IsNullOrWhiteSpace(brand))
@@ -1213,6 +1381,8 @@ Rules:
             }
             return SplitToTokens(normalized).Any(token => keywords.Contains(token));
         }
+        // Builds a searchable tag set from all three garments.
+        // Project process affected: local fallback scoring for filtered/requested recommendations.
         private static HashSet<string> BuildComboTags(Combination combo)
         {
             var tags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1232,6 +1402,7 @@ Rules:
                 AddTags(tags, tag);
             return tags;
         }
+        // Adds raw values and split tokens so "smart casual" can match either phrase or word.
         private static void AddTags(HashSet<string> set, params string?[] values)
         {
             foreach (var value in values)
@@ -1244,6 +1415,7 @@ Rules:
                     AddExpandedToken(set, token);
             }
         }
+        // Expands request/garment words through aliases, for example "office" and "formal".
         private static void AddExpandedToken(HashSet<string> set, string token)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -1291,6 +1463,7 @@ Rules:
                 ? RequestIntent.Empty
                 : new RequestIntent(tokens, wantsBlackDominant, wantsSporty);
         }
+        // Splits free text or labels into lowercase alphanumeric tokens.
         private static IEnumerable<string> SplitToTokens(string value)
         {
             var text = value.ToLowerInvariant();
@@ -1308,6 +1481,7 @@ Rules:
             return new string(buffer.ToArray())
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
+        // Keeps the top three scores visually distinct and sorted for the result cards.
         private static List<ScoredCombination> EnsureDescendingDistinctScores(List<ScoredCombination> sortedByScoreDesc)
         {
             if (sortedByScoreDesc.Count <= 1)
@@ -1325,6 +1499,7 @@ Rules:
             }
             return adjusted;
         }
+        // Counts closet inventory in the only three types allowed for matching.
         private static Dictionary<string, int> BuildTypeCounts(IEnumerable<Garment> garments)
         {
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -1345,6 +1520,7 @@ Rules:
             }
             return counts;
         }
+        // Normalizes noisy image-analysis garment type text into matcher buckets.
         private static string NormalizeTypeName(string? type)
         {
             var value = (type ?? string.Empty).Trim().ToLowerInvariant();
@@ -1354,8 +1530,11 @@ Rules:
             if (value.Contains("shoe") || value.Contains("sneaker") || value.Contains("boot")) return "shoes";
             return string.Empty;
         }
+        // Type check used when building shirt/pants/shoes pools.
         private static bool IsType(Garment g, string type) =>
             string.Equals(NormalizeTypeName(g.Type), type, StringComparison.OrdinalIgnoreCase);
+
+        // Fast lookup by garment id for seed resolution and merge operations.
         private static Dictionary<string, Garment> BuildGarmentLookup(IEnumerable<Garment> garments)
         {
             var lookup = new Dictionary<string, Garment>(StringComparer.OrdinalIgnoreCase);
@@ -1368,6 +1547,7 @@ Rules:
             }
             return lookup;
         }
+        // Combines page-provided garments with DB-loaded garments, letting DB values win when both exist.
         private static List<Garment> MergeGarments(IEnumerable<Garment> cachedGarments, IEnumerable<Garment> authoritativeGarments)
         {
             var merged = BuildGarmentLookup(cachedGarments);
@@ -1381,12 +1561,14 @@ Rules:
             return merged.Values.ToList();
         }
     }
+    // Returned by the matcher gate so UI/API can explain missing shirt/pants/shoes counts.
     public record MatchingGateResult
     {
         public bool Allowed { get; init; }
         public int MinPerTypeRequired { get; init; }
         public Dictionary<string, int> Counts { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     }
+    // Main result contract between MatchingService, SlotMachineMatch, and the mobile match API.
     public record MatchResult
     {
         public bool Success { get; init; }
@@ -1397,14 +1579,23 @@ Rules:
         public int MinPerTypeRequired { get; init; }
         public Dictionary<string, int> Counts { get; init; } = new(StringComparer.OrdinalIgnoreCase);
         public List<ScoredCombination> Results { get; init; } = new();
+
+        // Creates a result that tells UI/mobile the closet is missing the required garment counts.
         public static MatchResult CreateBlocked(int min, Dictionary<string, int> counts) =>
             new() { Blocked = true, MinPerTypeRequired = min, Counts = counts };
+
+        // Creates a result for a valid closet/request where no good outfit recommendation was found.
         public static MatchResult CreateNoMatches(string? message = null) =>
             new() { NoEligible = true, NoEligibleMessage = message };
+
+        // Creates a result for technical or validation errors during matching.
         public static MatchResult CreateError(string msg) => new() { ErrorMessage = msg };
+
+        // Creates a successful result with the top scored recommendations.
         public static MatchResult CreateSuccess(List<ScoredCombination> results) =>
             new() { Success = true, Results = results };
     }
+    // Save result contract used after a user clicks Save on a recommendation card.
     public record SaveOutfitResult
     {
         public bool Success { get; init; }
@@ -1418,6 +1609,7 @@ Rules:
         public static SaveOutfitResult Fail(string message) =>
             new() { Success = false, Duplicate = false, Message = message };
     }
+    // One recommended outfit: exactly one shirt, one pants, and one shoes plus user-facing explanation.
     public record ScoredCombination
     {
         public string ShirtId { get; init; } = string.Empty;
@@ -1429,12 +1621,14 @@ Rules:
         public string Explanation { get; init; } = string.Empty;
         public string RecommendedPlaces { get; init; } = string.Empty;
     }
+    // Internal candidate combination before it is scored or saved.
     internal class Combination
     {
         public Garment Shirt { get; init; } = default!;
         public Garment Pants { get; init; } = default!;
         public Garment Shoes { get; init; } = default!;
     }
+    // Parsed user text request used by deterministic fallback scoring.
     internal record RequestIntent(
         HashSet<string> Tokens,
         bool WantsBlackDominant,
@@ -1445,17 +1639,28 @@ Rules:
             false,
             false);
     }
+    // Links a scored recommendation back to the full garment objects used for validation and ranking.
     internal record ResolvedRecommendation(ScoredCombination Recommendation, Combination Combo);
+
+    // Parsed Gemini response, including success, no-match, or error payloads.
     internal record ScoringOutcome
     {
         public List<ScoredCombination> Results { get; init; } = new();
         public string? NoMatchMessage { get; init; }
         public string? ErrorMessage { get; init; }
+
+        // Empty scoring output used when Gemini returns nothing usable.
         public static ScoringOutcome Empty { get; } = new();
+
+        // Wraps parsed Gemini recommendation results.
         public static ScoringOutcome WithResults(List<ScoredCombination> results) =>
             new() { Results = results };
+
+        // Wraps a no-match message returned by Gemini or local validation.
         public static ScoringOutcome WithNoMatch(string message) =>
             new() { NoMatchMessage = message };
+
+        // Wraps a model/API parsing error message.
         public static ScoringOutcome WithError(string message) =>
             new() { ErrorMessage = message };
     }

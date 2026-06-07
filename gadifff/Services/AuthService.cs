@@ -9,6 +9,16 @@ using Models;
 using BCryptNet = BCrypt.Net.BCrypt;
 namespace gadifff.Services
 {
+    // SEARCH INDEX
+    // LOGIN, REGISTER, PASSWORD, RESET, EMAIL, COOKIE, VALIDATE, USER, AUTH, SESSION
+    //
+    // Topic: AUTHENTICATION SERVICE
+    // Purpose: Handles web login/register/logout state plus forgot-password and reset-password logic.
+    // Search keywords: LOGIN REGISTER PASSWORD RESET EMAIL COOKIE VALIDATE USER AUTH SESSION
+    // When to use it: Show this when explaining user authentication or password recovery.
+    // Important notes: Web session state is kept for Blazor UI; mobile auth endpoints call related logic from Program.cs.
+    //
+    // SECTION: AUTH LOGIN REGISTER PASSWORD
     // Role in project:
     // Central authentication/account service used by Login/Register/Forgot/Reset pages.
     // It keeps the current signed-in user in memory and exposes auth state changes to UI pages.
@@ -42,6 +52,8 @@ namespace gadifff.Services
         }
         // Login flow used by Login.razor:
         // validates credentials against UserDB and sets _currentUser for the active session.
+        // FLOW_LOGIN_WEB_03: AuthService.LoginAsync receives web credentials from Login.razor.
+        // This file is involved because it owns web auth state; next step is UserDB.GetByEmailAsync and BCrypt validation.
         public async Task<bool> LoginAsync(string email, string password)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
@@ -70,6 +82,8 @@ namespace gadifff.Services
         }
         // Registration flow used by Register.razor:
         // creates a new customer user and signs them in immediately.
+        // FLOW_REGISTER_WEB_03: AuthService.RegisterAsync checks duplicate email, hashes password, and creates a customer user.
+        // This file is involved because registration owns account creation rules; next step is UserDB.CreateAsync.
         public async Task<bool> RegisterAsync(string fullName, string email, string password, string role)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
@@ -97,6 +111,10 @@ namespace gadifff.Services
         }
         // Forgot-password flow:
         // creates a protected, expiring reset token and sends reset link by email.
+        // FLOW_PASSWORD_RESET_WEB_04: AuthService creates the protected token and browser reset link after UserDB finds the account.
+        // This file is involved because web reset security is centralized here; next step is IEmailSender.SendAsync.
+        // FLOW_PASSWORD_RESET_MOBILE_06: AuthService creates the same protected token/link for the MAUI-started reset.
+        // This file is involved because MAUI reuses the web reset security; next step is IEmailSender.SendAsync.
         public async Task<PasswordResetEmailStatus> SendPasswordResetEmailAsync(string email, string originBaseUrl)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
@@ -131,6 +149,10 @@ namespace gadifff.Services
         }
         // Reset-password flow:
         // validates token integrity/expiry and writes a new password hash to UserDB.
+        // FLOW_PASSWORD_RESET_WEB_08: AuthService validates the web reset token, checks expiry, and hashes the new password.
+        // This file is involved because token security belongs in one shared service; next step is UserDB.UpdatePasswordHashAsync.
+        // FLOW_PASSWORD_RESET_MOBILE_09: AuthService validates the reset token even when the email was started from MAUI.
+        // This file is involved because the final password change still uses the shared web reset page; next step is UserDB.UpdatePasswordHashAsync.
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
             token = token?.Trim() ?? string.Empty;

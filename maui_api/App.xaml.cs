@@ -1,31 +1,38 @@
-// מה הקובץ עושה: הקובץ מרכז חלק מהמערכת ומשתתף בהפעלת הפרויקט.
-// למה הקובץ נדרש: הוא נדרש כדי שהחלק הזה בפרויקט יפעל בצורה ברורה ומסודרת.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר למסכים, לשירותים, למודלים ולשכבת הדיבי לפי השימוש שלו.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים לקבצים שמזמנים את הקוד הזה או לקבצים שהוא מזמן.
-
-// מה הקובץ עושה: הקובץ שיך לאפליקציית המובייל ומגדיר מסך, אתחול או התאמה לפלטפורמה.
-// הגדרת משתנה או שדה ששומר מצב, ערך או תלות שנדרשים להמשך הקוד.
-// לאילו חלקים בפרויקט הוא מתחבר: הוא מתחבר לפרויקט האטר, להגדרי המובייל, לדף הראוי ולכטובת השרת.
-// איפה ממשיכים לקרוא את הלוגיקה הקשורה: ממשיכים בדף הראוי של המובייל ובקוד שמוחליט לאיזה כטובת שרת להתחבר.
 
 
 
-// הגדרת מרחו שמות שממקם את הקובץ בטבקת הפרויקט המטאימה.
+
 namespace gadifff.Mobile;
 
-// הגדרת מבנה מרכזי שמרכז נתונים או פעוליות עובר החלק הזה בפרויקט.
+// SEARCH INDEX
+// MAUI, MOBILE, APP, WINDOW, MAINPAGE, STARTUP
+//
+// Topic: MAUI APPLICATION ROOT
+// Purpose: Loads shared resources from App.xaml and opens MainPage as the first screen.
+// Search keywords: MAUI MOBILE APP WINDOW MAINPAGE STARTUP
+// When to use it: Show this after MauiProgram when explaining how the mobile UI appears.
+// Important notes: This project uses MainPage directly, not AppShell navigation, for the current Android app.
 public partial class App : Application
 {
-	// הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+	// Topic: App resource initialization
+	// Purpose: Loads App.xaml resources, including merged style dictionaries.
+	// Search keywords: MAUI APP STYLE RESOURCE
+	// When to use it: Use when explaining why MainPage can use StaticResource styles.
+	// Important notes: No API call happens here.
 	public App()
 	{
 		InitializeComponent();
 	}
 
-	// הגדרת פעולה שמרכזת שלב ברור בלוגיקה ומופעלת כאשר המסך או השירות צריך את התוצאה שלה.
+	// Topic: First mobile window
+	// Purpose: Creates the first app window and places MainPage inside it.
+	// Search keywords: MAUI WINDOW MAINPAGE STARTUP
+	// When to use it: Use when explaining where the visible MAUI screen starts.
+	// Important notes: MainPage then chooses the server URL and handles all user actions/API calls.
+	// FLOW_MAUI_STARTUP_03: App.CreateWindow opens MainPage as the first visible MAUI screen.
+	// This file is involved because it connects startup to the UI; next step is MainPage constructor and server URL setup.
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		// החזרת התוצאה אל הקוד שקרא לפעולה.
-		return new Window(new AppShell());
+		return new Window(new MainPage());
 	}
 }
